@@ -19,8 +19,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sstream>
+#include <mysql/mysql.h>
+#include <signal.h>
+#include <sys/wait.h>
 using namespace std;
 
+class Data{
+    public:
+		int pid;
+		char time[30];
+		char str[100];
+};
 void initDaemon(){
     setsid();
     umask(0);
@@ -28,13 +37,38 @@ void initDaemon(){
         close(i);
     }
 }
+//将三项信息存入到数据库当中
+void put_to_mysql(Data mysql_data)
+{
+	int i;
+	MYSQL *mysql;
+	MYSQL_RES *result;
+	MYSQL_ROW row;
+
+	if ((mysql = mysql_init(NULL)) == NULL){
+		cout << "mysql init error" << endl;
+		exit(0);
+	}
+
+	if (mysql_real_connect(mysql,"localhost","root","root123","test",0,NULL,0) == NULL){
+		cout << "mysql real connect error" << endl;
+		exit(0);
+	}
+	
+	char buff[4096];
+	sprintf(buff, "INSERT INTO dbtest1(dbtest_pid, dbtest_time, dbtest_str) VALUES(%d, '%s', '%s');", mysql_data.pid, mysql_data.time, mysql_data.str);
+	mysql_query(mysql, buff);
+	mysql_close(mysql);
+	return;
+}
+//服务端进程的相关操作
 void createServer(char* IP, int portNumber){
     int listenfd, connfd;
     sockaddr_in servaddr;
     ofstream cout("/root/homework/Network_Homework/output_server");
-    cout << "test" << endl;
     char buff[4096];
-    int n;
+    Data mysql_data;
+    int n, i;
     if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
         cout << "Create Socket Failed" << endl;
         exit(0);
@@ -43,10 +77,8 @@ void createServer(char* IP, int portNumber){
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
- //   servaddr.sin_addr.s_addr = inet_addr(IP);
     servaddr.sin_port = htons(uint16_t(portNumber));
     
-//    socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1);
     if(bind(listenfd, (sockaddr *)&servaddr, sizeof(servaddr)) == -1){
         cout << "Bind Socket Error:" << strerror(errno) << "errno:" << errno << endl;
         exit(0);
@@ -62,7 +94,7 @@ void createServer(char* IP, int portNumber){
             cout << "Accept Socket Error" << endl;
             continue;
         }
-    //当收到链接请求时，就fork一个子进程，使用子进程进行通信
+	//当收到链接请求时，就fork一个子进程，使用子进程进行通信
 	pid_t pid = fork();
 	if (pid == -1)
 		perror("fork new process error\n");
@@ -86,8 +118,7 @@ void createServer(char* IP, int portNumber){
 		n = recv(connfd, buff, 4096, 0);
 		buff[n] = '\n';
 		buff[n+1] = '\0';
-		cout << "Recieve: " << buff << std::flush;
-		
+		mysql_data.pid = atoi(buff);   //将收到的pid转化为数据库的类型
 		//发送time，并接收子进程的time值
 		
 		ss.clear();
@@ -101,8 +132,9 @@ void createServer(char* IP, int portNumber){
 		n = recv(connfd, buff, 4096, 0);
 		buff[n] = '\n';
 		buff[n+1] = '\0';
-		cout << "Recieve: " << buff << std::flush;
-
+		//mysql_data.time = trans_time_t(buff); //将收到的time转化为数据库的类型
+		for (i = 0; i < 30; i ++)
+			mysql_data.time[i] = buff[i];
 		//发送str，并接收子进程返回的随机字符串
 		
 		ss.clear();
@@ -119,8 +151,8 @@ void createServer(char* IP, int portNumber){
 		n = recv(connfd, buff, 4096, 0);
 		buff[n] = '\n';
 		buff[n+1] = '\0';
-		cout << "Recieve: " << buff << std::flush;
-		
+		for (i = 0; i < 100; i ++)
+			mysql_data.str[i] = buff[i];  //将收到的字符串转化为数据库的类型
 		//发送end信号给服务端
 		ss.clear();
 		ss.str("");
@@ -131,7 +163,8 @@ void createServer(char* IP, int portNumber){
 			exit(0);
 		}
 
-		close(connfd);		
+		close(connfd);
+		put_to_mysql(mysql_data);		
 		exit(0);
 	}
     }
@@ -139,6 +172,8 @@ void createServer(char* IP, int portNumber){
 }
 
 int main(int argc, char * argv[]){
+    signal(SIGCHLD, SIG_IGN); //设置SIGCHLD信号的跳转
+
     if(argc < 2){
         cout << "Usage : test1-server <port_number> " <<endl;
         exit(0);
