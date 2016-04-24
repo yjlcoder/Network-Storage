@@ -40,7 +40,7 @@ void put_to_mysql(Data &mysql_data)
 	}
 
 	char buff[4096];
-	sprintf(buff, "INSERT INTO dbtest1(dbtest_pid, dbtest_time, dbtest_str) VALUES(%s, '%s', '%s');", mysql_data.pid_str, mysql_data.time_str, mysql_data.randomString_str);
+	sprintf(buff, "INSERT INTO dbtest2(dbtest_pid, dbtest_time, dbtest_str) VALUES(%s, '%s', '%s');", mysql_data.pid_str, mysql_data.time_str, mysql_data.randomString_str);
 	mysql_query(mysql, buff);
 	mysql_close(mysql);
 	return;
