@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <time.h>
 using namespace std;
-//ofstream cout("/root/homework/Network_Homework/output_client");
 
 void initDaemon(){
     setsid();
@@ -67,8 +66,6 @@ void createClient(int i, char* ipaddr, int PortNumber){
 	initDaemon();
     	ofstream cout("/root/homework/Network_Homework/output_client");
     }
-//    else if (pid == 0)
-//	exit(0);
     
     
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -157,27 +154,26 @@ void createClient(int i, char* ipaddr, int PortNumber){
     if (st.substr(0,3) != "end")
 	Finish_Client(sockfd);
     close(sockfd);
-
+    
+    //将三项信息输入到****.pid.txt当中
     ss.str("");
     ss.clear();
-    ss << "/root/homework/Network_Homework/output_client_file/"; //文件夹放入的路径
+    ss << "/root/homework/Network_Homework/"; //文件夹放入的路径
     ss << s_pid;
     ss << ".pid.txt";
     ss >> buff;
     ofstream file3(buff);
-    file3 << "pid:" << s_pid << endl;
-    file3 << "time:" << s_time << endl;
-    file3 << "str:" << s_str << endl;
+    file3 << s_pid << endl;
+    file3 << s_time << endl;
+    file3 << strlen(s_str) << endl;
     exit(0);
 }
 
 int main(int argc, char * argv[]){
-    ofstream file1("/root/homework/Network_Homework/output_client_count");
     if(argc < 3){
         cout << "Usage: test1-client <IP_ADDR> <PORT_NUMBER>" << endl;
         exit(0);
     }
-    file1 << "test" << endl;
     //GET IP
     char * ipaddr = argv[1];
 
@@ -193,7 +189,7 @@ int main(int argc, char * argv[]){
         return 0;
     } else {
         //Child Process
-	int MAX_k = 5;
+	int MAX_k = 500;
 	initDaemon();
 	//生成500个子进程去链接服务端
 	for (int i = 0; i < MAX_k; i ++)
