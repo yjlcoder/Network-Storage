@@ -64,7 +64,7 @@ void initDaemon(){
 void createClient(char* ipaddr, int PortNumber){
     pid_t mypid = getpid();
     stringstream ss("");
-    ss << "/tmp/output_client_" << mypid << ".txt";
+    ss << mypid << ".pid.txt";
     ofstream cout(ss.str().c_str());
     int sockfd, n;
     char recvLine[4096], sendLine[4096];
@@ -106,8 +106,6 @@ void createClient(char* ipaddr, int PortNumber){
         break;
     }
 
-    cout << buff << endl;
-
     char num[5];
     num[0] = buff[10];
     num[1] = buff[11];
@@ -115,10 +113,10 @@ void createClient(char* ipaddr, int PortNumber){
     num[3] = buff[13];
     num[4] = '\0';
     int number = atoi(num);
-    cout << number << endl;
 
     ss.str("");
     ss << getpid();
+    string pid_str = ss.str();
     if(send(sockfd, ss.str().c_str(), strlen(ss.str().c_str()), 0) < 0){
         cout << "Send Message Error" << endl;
         exit(0);
@@ -126,6 +124,7 @@ void createClient(char* ipaddr, int PortNumber){
 
     time_t now = time(0);
     strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    string time_str(buff);
     if(send(sockfd, buff, 19, 0) < 0){
         cout << "Send Message Error" << endl;
         exit(0);
@@ -137,12 +136,24 @@ void createClient(char* ipaddr, int PortNumber){
 
     for(int i = 0; i < number; i++) buff[i] = charpool[rand()%charNum];
     buff[number] = '\0';
-    cout << buff << endl;
-
+    string randomString_str(buff);
     if(send(sockfd, buff, number, 0) < 0){
         cout << "Send Message Error" << endl;
         exit(0);
     }
+
+
+    pollValue = 1;
+    while(pollValue > 0){
+        pollValue = poll(&pollfd, 1, -1);
+        if(pollValue == -1 && errno == EINTR) continue;
+        if(pollValue == -1) break;
+        n = recv(sockfd, buff, 10240, 0 );
+        buff[n] = '\0';
+        break;
+    }
+
+    cout << pid_str << endl << time_str << endl << randomString_str << flush;
 
     close(sockfd);
     exit(0);
