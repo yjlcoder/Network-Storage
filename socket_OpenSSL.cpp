@@ -110,9 +110,8 @@ int main(){
 	service.decrypt(eninfo, &deinfo, l);
 
 
-	cout << deinfo << endl;
 	cout << info << endl;
-	
+	cout << deinfo << endl;	
 	free(eninfo);
 	free(deinfo);
 	return 0;
