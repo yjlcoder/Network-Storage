@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bitset>
 #include <zconf.h>
 #include <cstring>
 #include <sys/stat.h>
@@ -9,25 +10,27 @@
 #include <poll.h>
 #include <errno.h>
 #include <sstream>
+#include <cstdlib>
 #include <mysql/mysql.h>
 
 using namespace std;
 
 struct Data{
-    string pid_str;
+    int pid_str;
     string time_str;
     string randomString_str;
 };
 
+
 void initDaemon();
 void createServer(int portNumber);
 void put_to_mysql(Data &mysql_data)
-
 {
     int i;
 	MYSQL *mysql;
 	MYSQL_RES *result;
 	MYSQL_ROW row;
+	fstream cout("sql.txt");
 
 	if ((mysql = mysql_init(NULL)) == NULL){
 		cout << "mysql init error" << endl;
@@ -40,7 +43,8 @@ void put_to_mysql(Data &mysql_data)
 	}
 
 	char buff[4096];
-	sprintf(buff, "INSERT INTO dbtest2(dbtest_pid, dbtest_time, dbtest_str) VALUES(%s, '%s', '%s');", mysql_data.pid_str, mysql_data.time_str, mysql_data.randomString_str);
+	sprintf(buff, "INSERT INTO dbtest2(dbtest_pid, dbtest_time, dbtest_str) VALUES(%d, '%s', '%s')", mysql_data.pid_str, mysql_data.time_str.c_str(), mysql_data.randomString_str.c_str());
+	cout << buff << endl;
 	mysql_query(mysql, buff);
 	mysql_close(mysql);
 	return;
@@ -101,7 +105,7 @@ void createServer(int portNumber){
         exit(0);
     }
 
-    if(listen(listenfd, 100) == -1){
+    if(listen(listenfd, 500) == -1){
         cout << "Listen Socket Error" << endl;
         exit(0);
     }
@@ -135,15 +139,23 @@ void createServer(int portNumber){
                 exit(0);
             }
 
+	    cout << "SENT: " << ss.str() << endl;
+
             int pollValue = 1;
+	    uint32_t pid_uint;
             while(pollValue > 0){
                 pollValue = poll(&poll_fd, 1, -1);
                 if(pollValue == -1 && errno == EINTR) continue;
-                if(pollValue == -1) break;
-                n = recv(connfd, buff, 10240, 0 );
-                buff[n] = '\0';
+                if(pollValue == -1){
+			cout << "ERROR : poll " << endl;
+			exit(-1);
+		}
+                n = recv(connfd, &pid_uint, 4, 0 );
+		pid_uint = ntohl(pid_uint);
                 break;
             }
+	    int pid_int = pid_uint;
+	    cout << pid_int << endl;
 
             string pid_str = buff;
 
@@ -152,14 +164,14 @@ void createServer(int portNumber){
                 pollValue = poll(&poll_fd, 1, -1);
                 if(pollValue == -1 && errno == EINTR) continue;
                 if(pollValue == -1) break;
-                n = recv(connfd, buff, 10240, 0 );
+                n = recv(connfd, buff, 19, 0 );
                 buff[n] = '\0';
                 break;
             }
 
             string time_str = buff;
 
-            pollValue = 1;
+ 	    pollValue = 1;
             while(pollValue > 0){
                 pollValue = poll(&poll_fd, 1, -1);
                 if(pollValue == -1 && errno == EINTR) continue;
@@ -169,7 +181,7 @@ void createServer(int portNumber){
                 break;
             }
 
-            string randomString_str = buff;
+            string randomString_str(buff);
 
             if(send(connfd, "end",3 , 0) < 0){
                 cout << "Send Message Error" << endl;
@@ -179,10 +191,27 @@ void createServer(int portNumber){
             while(recv(connfd, buff, 10240, 0) != 0);
             cout << "Disconnected" << endl;
             Data theData;
-            theData.pid_str = pid_str;
-            theData.time_str = time_str;
-            theData.randomString_str = randomString_str;
-            put_to_mysql(theData);
+
+	    MYSQL * mysql;
+	    if((mysql = mysql_init(NULL)) == NULL){
+		    cout << "mysql_init failed" << endl;
+		    exit(-1);
+	    }
+	    mysql_set_character_set(mysql, "gbk");
+
+	    if(mysql_real_connect(mysql, "localhost", "root", "root123", "test", 0, NULL, 0) == NULL){
+		    cout << "mysql_real_connect failed(" << mysql_error(mysql) <<  ")" << endl;
+		    exit(-1);
+	    }
+
+	    ss.str("");
+	    ss << "insert into dbtest2 values (" << pid_int << ", '" << time_str << "', '" << randomString_str << "')";
+	    cout << ss.str();
+	    if(mysql_query(mysql, ss.str().c_str())){
+		    cout << "mysql_query failed(" << mysql_error(mysql) << ")" << endl;
+	    }
+	    mysql_close(mysql);
+	    cout << "END" << endl;
             close(connfd);
             exit(0);
         } else if (pid > 0){

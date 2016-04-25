@@ -1,4 +1,5 @@
 #include <iostream>
+#include <bitset>
 #include <zconf.h>
 #include <sys/stat.h>
 #include <sys/param.h>
@@ -10,6 +11,8 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <cstdlib>
+#include <errno.h>
 
 using namespace std;
 
@@ -39,7 +42,7 @@ int main(int argc, char * argv[]){
     } else if (pid == 0){
         initDaemon();
         // Now is a Daemon Process
-        for(int i = 0; i < 5; i++){
+        for(int i = 0; i < 500; i++){
             pid = fork();
             if(pid < 0){
                 perror("Fork Error");
@@ -63,9 +66,6 @@ void initDaemon(){
 
 void createClient(char* ipaddr, int PortNumber){
     pid_t mypid = getpid();
-    stringstream ss("");
-    ss << mypid << ".pid.txt";
-    ofstream cout(ss.str().c_str());
     int sockfd, n;
     char recvLine[4096], sendLine[4096];
     sockaddr_in servaddr;
@@ -114,10 +114,12 @@ void createClient(char* ipaddr, int PortNumber){
     num[4] = '\0';
     int number = atoi(num);
 
-    ss.str("");
-    ss << getpid();
-    string pid_str = ss.str();
-    if(send(sockfd, ss.str().c_str(), strlen(ss.str().c_str()), 0) < 0){
+    stringstream ss("");
+    ss << mypid << ".pid.txt";
+    ofstream cout(ss.str().c_str());
+    uint32_t pid_nl = htonl(mypid);
+
+    if(send(sockfd, &pid_nl, 4, 0) < 0){
         cout << "Send Message Error" << endl;
         exit(0);
     }
@@ -153,7 +155,7 @@ void createClient(char* ipaddr, int PortNumber){
         break;
     }
 
-    cout << pid_str << endl << time_str << endl << randomString_str << flush;
+    cout << mypid << endl << time_str << endl << randomString_str << flush;
 
     close(sockfd);
     exit(0);
