@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 #include <zconf.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -21,7 +22,7 @@ int main(int argc, char * argv[]){
         exit(0);
     }
 
-    const int process = 10;
+    const int process = 500;
 
     //GET IP
     char * ipaddr = argv[1];
@@ -68,7 +69,7 @@ void createClient(char* ipaddr, int PortNumber) {
     uint32_t mypid_network = htonl(mypid);
     stringstream ss("");
     ss << mypid << ".pid.txt";
-    ofstream fout(ss.str());
+    ofstream fout(ss.str().c_str());
     if ((socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         fout << "Cannot create socket" << endl;
         exit(0);
