@@ -27,11 +27,12 @@ struct SafeInfo{
 		unsigned char clearText[AESKEYL]; 
 				
 		RSA_private_decrypt(AESKEYL, (const unsigned char*)cipherText, clearText, Rsa, RSA_NO_PADDING);
-		AES_set_encrypt_key(clearText, AESKEYL*8, &key);
+		if (AES_set_encrypt_key(clearText, AESKEYL*8, &key) < 0) {
+			fprintf(stderr, "Unable to set decryption key in AESn");
+			exit(-1);
+		}
 
 		RSA_free(Rsa);
-
-		puts("mi");
 		return 0;
 	}
 
@@ -41,10 +42,13 @@ struct SafeInfo{
 		unsigned char clearText[AESKEYL]; 
 		srand(time(0) + getpid());
 		for (int i = 0; i < AESKEYL; ++i) {
-			clearText[i] = rand()&0xff;
+			clearText[i] = rand()&0x7f;//for safe
 		}
 		RSA_public_encrypt(AESKEYL, (const unsigned char*)clearText, cipherText, Rsa, RSA_NO_PADDING); 
-		AES_set_decrypt_key(clearText, AESKEYL*8, &key);
+		if (AES_set_decrypt_key(clearText, AESKEYL*8, &key) < 0) {
+			fprintf(stderr, "Unable to set decryption key in AESn");
+			exit(-1);
+		}
 		RSA_free(Rsa);
 		return 0;
 	}
@@ -88,31 +92,37 @@ struct SafeInfo{
 
 };
 
+void test(int n){
+	for (int i = 0; i < n; ++i) {
+		SafeInfo client, service;
+		unsigned char buff[512];
+		int Len = 0;
+		Len = client.clientInit(buff);
+		unsigned char data[16];
+		service.serviceKeySet(Len, buff, data);
+
+
+		puts("check0");
+		client.clientKeySet(data);
+		puts("check1");
+
+		char info[256] = "zhangsanlisiwangwu";
+		unsigned char * eninfo;
+		char * deinfo;
+		int l;
+		l = client.encrypt(info, &eninfo);
+		
+		service.decrypt(eninfo, &deinfo, l);
+
+
+		cout << info << endl;
+		cout << deinfo << endl;	
+		free(eninfo);
+		free(deinfo);
+	}
+}
+
 int main(){
-	SafeInfo client, service;
-	unsigned char buff[512];
-	int Len = 0;
-	Len = client.clientInit(buff);
-	unsigned char data[16];
-	service.serviceKeySet(Len, buff, data);
-
-
-	puts("check0");
-	client.clientKeySet(data);
-	puts("check1");
-
-	char info[256] = "zhangsanlisiwangwu";
-	unsigned char * eninfo;
-	char * deinfo;
-	int l;
-	l = client.encrypt(info, &eninfo);
-	
-	service.decrypt(eninfo, &deinfo, l);
-
-
-	cout << info << endl;
-	cout << deinfo << endl;	
-	free(eninfo);
-	free(deinfo);
+	test(1000);
 	return 0;
 }
