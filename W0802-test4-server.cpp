@@ -1,4 +1,5 @@
 #include <zconf.h>
+#include <cstdlib>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <cstdio>
@@ -12,7 +13,7 @@
 using namespace std;
 
 const int BUFSIZE = 10240;
-const int process = 10;
+const int process = 500;
 
 void initDaemon(){
     setsid();
@@ -116,11 +117,10 @@ void createServer(int portNumber) {
         sendto(socketfd, "end", 3, 0, (sockaddr*) &remaddr, addrlen);
     }
 
-    /*
     for(int i = 0; i < process; i++){
         MYSQL * mysql;
         if((mysql = mysql_init(NULL)) == NULL){
-		    fout << "mysql_init failed" << endl;
+    	    fout << "mysql_init failed" << endl;
 		    exit(-1);
 	    }
 	    mysql_set_character_set(mysql, "gbk");
@@ -138,7 +138,6 @@ void createServer(int portNumber) {
 	    }
 	    mysql_close(mysql);
     }
-     */
     close(socketfd);
     fout << "EXIT" << endl;
     exit(0);
