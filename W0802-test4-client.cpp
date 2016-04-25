@@ -21,6 +21,8 @@ int main(int argc, char * argv[]){
         exit(0);
     }
 
+    const int process = 10;
+
     //GET IP
     char * ipaddr = argv[1];
 
@@ -37,7 +39,18 @@ int main(int argc, char * argv[]){
     } else {
         //Child Process
         initDaemon();
-        createClient(ipaddr, portNumber);
+
+        for(int i = 0; i < process; i++) {
+            pid = fork();
+            if (pid < 0) {
+                perror("Fork Error");
+                exit(0);
+            } else if (pid > 0) {
+                continue;
+            } else if (pid == 0) {
+                createClient(ipaddr, portNumber);
+            }
+        }
     }
 }
 
@@ -51,21 +64,26 @@ void initDaemon(){
 
 void createClient(char* ipaddr, int PortNumber) {
     int socketfd;
+    uint32_t mypid = getpid();
+    uint32_t mypid_network = htonl(mypid);
+    stringstream ss("");
+    ss << mypid << ".pid.txt";
+    ofstream fout(ss.str());
     if ((socketfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Cannot create socket");
+        fout << "Cannot create socket" << endl;
         exit(0);
     }
 
     sockaddr_in myaddr;
     sockaddr_in remaddr;
-    int slen = sizeof(myaddr);
+    socklen_t slen = sizeof(myaddr);
     memset(&myaddr, 0, sizeof(myaddr));
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = htons(0);
     myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
 
     if (bind(socketfd, (sockaddr *) &myaddr, sizeof(myaddr)) < 0) {
-        perror("bind failed");
+        fout << "bind failed" << endl;
         exit(0);
     }
 
@@ -73,23 +91,65 @@ void createClient(char* ipaddr, int PortNumber) {
     remaddr.sin_family = AF_INET;
     remaddr.sin_port = htons(PortNumber);
     if(inet_aton(ipaddr, &remaddr.sin_addr) == 0){
-        perror("inet_aton() failed");
+        fout << "inet_aton() failed" << endl;
         exit(1);
     }
 
     const int BUFSIZE = 10240;
     char buf[BUFSIZE];
 
-    buf[0] = '1';
-    buf[1] = '2';
-    buf[2] = '3';
-    buf[3] = '\0';
-
-    for(int i = 0; i < 5; i++){
-        if(sendto(socketfd, buf, BUFSIZE, 0, (sockaddr*)&remaddr, slen) == -1){
-            cout << "sendto" << endl;
-        }
+    //Send PID
+    if(sendto(socketfd, &mypid_network, 4, 0, (sockaddr*)&remaddr, slen) == -1){
+        fout << "sendto failed" << endl;
+        exit(1);
     }
+
+    //Get time & Send time
+    time_t now = time(0);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&now));
+    string time_str(buf);
+    if(sendto(socketfd, buf, 19, 0, (sockaddr*)&remaddr, slen) == -1){
+        fout << "sendto failed" << endl;
+        exit(1);
+    }
+
+    int recvlen;
+    int serverRand;
+
+    for(;;){
+        recvlen = recvfrom(socketfd, buf, BUFSIZE, 0, (sockaddr*)&remaddr, &slen);
+        if(recvlen <= 0) continue;
+        char serverRandom[5];
+        serverRandom[0] = buf[3];
+        serverRandom[1] = buf[4];
+        serverRandom[2] = buf[5];
+        serverRandom[3] = buf[6];
+        serverRandom[4] = '\0';
+        serverRand = atoi(serverRandom);
+        break;
+    }
+
+    const char * charPool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const int charNum = 52;
+    srand(time(NULL) + mypid);
+    for(int i = 0; i < serverRand; i++){ buf[i] = charPool[rand()%charNum]; }
+    buf[serverRand] = '\0';
+
+    string randomStr(buf);
+
+    if(sendto(socketfd, buf, strlen(buf), 0, (sockaddr*)&remaddr, slen) == -1){
+        fout << "sendto failed" << endl;
+        exit(1);
+    }
+
+    for(;;){
+        recvlen = recvfrom(socketfd, buf, BUFSIZE, 0, (sockaddr*)&remaddr, &slen);
+        if(recvlen <= 0) continue;
+        break;
+    }
+
+    fout << mypid << endl << time_str << endl << randomStr << flush;
     close(socketfd);
+
     exit(0);
 }
