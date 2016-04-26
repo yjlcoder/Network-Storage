@@ -162,6 +162,8 @@ void createServer(char* IP, int portNumber){
 			cout << "Send str Error" << strerror(errno) << errno << endl;
 			exit(0);
 		}
+		
+		while (recv(connfd, buff, 4096, 0) != 0);
 
 		close(connfd);
 		put_to_mysql(mysql_data);		
