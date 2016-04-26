@@ -158,14 +158,13 @@ void createClient(int i, char* ipaddr, int PortNumber){
     //将三项信息输入到****.pid.txt当中
     ss.str("");
     ss.clear();
-    ss << "/root/homework/Network_Homework/"; //文件夹放入的路径
     ss << s_pid;
     ss << ".pid.txt";
     ss >> buff;
     ofstream file3(buff);
     file3 << s_pid << endl;
     file3 << s_time << endl;
-    file3 << strlen(s_str) << endl;
+    file3 << s_str << endl;
     exit(0);
 }
 
