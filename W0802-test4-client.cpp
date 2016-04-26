@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fcntl.h>
 #include <cstdlib>
 #include <zconf.h>
 #include <sys/param.h>
@@ -74,6 +75,9 @@ void createClient(char* ipaddr, int PortNumber) {
         fout << "Cannot create socket" << endl;
         exit(0);
     }
+
+    fcntl(socketfd, O_NONBLOCK);
+
 
     sockaddr_in myaddr;
     sockaddr_in remaddr;
