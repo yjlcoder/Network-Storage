@@ -60,6 +60,46 @@ int main(int argc, char * argv[]){
     si_other.sin_addr.S_un.S_addr = inet_addr(server_ip.c_str());
 
     while (true){
+        FD_SET ReadSet;
+        FD_SET WriteSet;
+
+        while (true){
+            FD_ZERO(&WriteSet);
+            FD_SET(soc, &WriteSet);
+            int total = select(soc + 1, NULL, &WriteSet, NULL, NULL);
+            if (total > 0){
+                if (FD_ISSET(soc, &WriteSet)){
+                    cout << " Enter message : ";
+                    cin >> message;
+
+                    if (sendto(soc, message, strlen(message), 0, (sockaddr*)&si_other, slen) == SOCKET_ERROR){
+                        cout << "Send to Error Code: " << WSAGetLastError() << endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    break;
+                }
+            }
+
+        }
+
+        while (true){
+            FD_ZERO(&ReadSet);
+            FD_SET(soc, &ReadSet);
+            int total = select(soc + 1, &ReadSet, NULL, NULL, NULL);
+            if (total > 0){
+                if (FD_ISSET(soc, &ReadSet)){
+                    int recvlen;
+                    if ((recvlen = recvfrom(soc, buf, BUFSIZE, 0, (sockaddr*)&si_other, &slen)) == SOCKET_ERROR){
+                        cout << "recvfrom Error Code: " << WSAGetLastError() << endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    cout << "Recvlen: " << recvlen << endl;
+                    buf[recvlen] = '\0';
+                    cout << "BUF: " << buf << endl;
+                    break;
+                }
+            }
+        }
         cout << " Enter message : ";
         cin >> message;
 
