@@ -226,17 +226,18 @@ void createServer(int portNumber){
 					the_mysql_data[i].pid_str = ntohl(*((int *)pids));
 					++Recved_Num[i];
             //	cerr << __LINE__ << endl; 
+					continue;
 				}
 
 				if (Recved_Num[i] == 1) {
 					unsigned char buff[32];
 					char times[32];
-            //	cerr << __LINE__ << endl; 
 					read(client[i].fd, buff, sizeof(buff));
 					service[i].decrypt(buff, times, sizeof(buff));
 					times[19] = '\0';
 					strcpy(the_mysql_data[i].time_str, times);
 					++Recved_Num[i];
+					continue;
             //	cerr << __LINE__ << endl; 
 				}
 

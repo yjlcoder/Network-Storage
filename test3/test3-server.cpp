@@ -97,7 +97,7 @@ int sendStrLen(int sockSvr,ofstream & cerr){
   	    mylog << "Send Message Error" << endl;
         exit(0);
     }
-	cerr << sbuff << endl;
+	//cerr << sbuff << endl;
 	return number;
 }
 
@@ -228,16 +228,17 @@ void createServer(int portNumber){
 					read(client[i].fd, pids, 4);
 					the_mysql_data[i].pid_str = ntohl(*((int *)pids));
 					++Recved_Num[i];
-            //	cerr << __LINE__ << endl; 
+            //	cerr << __LINE__ << endl;
+					continue;
 				}
 
 				if (Recved_Num[i] == 1) {
 					char times[32];
-					read(client[i].fd, buff, 19);
+					int checkl = read(client[i].fd, times, 19);
 					times[19] = '\0';
 					strcpy(the_mysql_data[i].time_str, times);
 					++Recved_Num[i];
-            //	cerr << __LINE__ << endl; 
+					continue;
 				}
 
 				if (Recved_Num[i] == 2) {

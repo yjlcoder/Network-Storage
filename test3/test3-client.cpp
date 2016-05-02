@@ -172,7 +172,8 @@ void createClient(int i, char* ipaddr, int PortNumber){
 //	cout << Len << endl;
     buff[19] = '\0';
 	time_str = buff;
-    if(send(sockfd, buff, 19, 0) < 0){
+	int sendL = 0;
+    if((sendL = send(sockfd, buff, 19, 0)) < 0){
         cout << "Send Message Error" << endl;
         exit(0);
     }
