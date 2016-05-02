@@ -16,6 +16,7 @@
 #include <fstream>
 #include <map>
 
+
 using namespace std;
 
 const int MAXC = 500;

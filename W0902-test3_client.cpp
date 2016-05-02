@@ -10,6 +10,7 @@
 #include <string>
 #include <ctime>
 
+
 #pragma  comment(lib,"ws2_32.lib")
 
 using namespace std;
