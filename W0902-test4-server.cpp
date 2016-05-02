@@ -76,6 +76,12 @@ int main(){
             exit(0);
         }
         cout << "Socket Created" << endl;
+
+        u_long iMode;
+        int iResult = ioctlsocket(soc, FIONBIO, &iMode);
+        if (iResult != NO_ERROR){
+            cout << "ioctlsocket failed because " << iResult;
+        }
         
         memset(&server, 0, sizeof(server));
         server.sin_family = AF_INET;
@@ -90,20 +96,45 @@ int main(){
         cout << "Bind Done" << endl;
 
         while(true){
-            if((recv_len = recvfrom(soc, buf, BUFSIZE, 0, (sockaddr *) &si_other, &slen)) == SOCKET_ERROR){
-                cout << "Recvfrom with error code " << WSAGetLastError() << endl;
-                exit(EXIT_FAILURE);
+
+            FD_SET ReadSet;
+            FD_SET WriteSet;
+
+            while (true){
+                FD_ZERO(&ReadSet);
+                FD_SET(soc, &ReadSet);
+                int total = select(soc + 1, &ReadSet, NULL, NULL, NULL);
+                if (total > 0){
+                    if (FD_ISSET(soc, &ReadSet)){
+                        if((recv_len = recvfrom(soc, buf, BUFSIZE, 0, (sockaddr *) &si_other, &slen)) == SOCKET_ERROR){
+                            cout << "Recvfrom with error code " << WSAGetLastError() << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        buf[recv_len] = '\0';
+                        cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << " : " << ntohs(si_other.sin_port) << endl;
+                        cout << "Data: " << buf << endl;
+                        break;
+                    }
+                }
             }
-            buf[recv_len] = '\0';
-            cout << "Received packet from " << inet_ntoa(si_other.sin_addr) << " : " << ntohs(si_other.sin_port) << endl;
-            cout << "Data: " << buf << endl;
 
-            cin >> buf;
-            cout << buf << " " << strlen(buf) << endl;
+            while (true){
+                FD_ZERO(&WriteSet);
+                FD_SET(soc, &WriteSet);
+                int total = select(soc + 1, NULL, &WriteSet, NULL, NULL);
+                if (total > 0){
+                    if (FD_ISSET(soc, &WriteSet)){
+                        cin >> buf;
+                        cout << buf << " " << strlen(buf) << endl;
 
-            if(sendto(soc, buf, strlen(buf), 0, (sockaddr*) &si_other, slen) == SOCKET_ERROR){
-                cout << "Sendto() failed with error code : " << WSAGetLastError() << endl;
-                exit(EXIT_FAILURE);
+                        if(sendto(soc, buf, strlen(buf), 0, (sockaddr*) &si_other, slen) == SOCKET_ERROR){
+                            cout << "Sendto() failed with error code : " << WSAGetLastError() << endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        break;
+                    }
+                }
+
             }
         }
 
