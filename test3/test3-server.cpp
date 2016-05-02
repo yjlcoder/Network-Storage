@@ -27,7 +27,7 @@
 #define BACKLOG 600
 #define Max_Recved_Num 3
 
-		
+		 
 class CLIENT{
 	public:
 		int fd;

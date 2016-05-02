@@ -166,7 +166,7 @@ void createClient(int i, char* ipaddr, int PortNumber){
         cout << "Send Message Error" << endl;
         exit(0);
     }
-    
+     
 	time_t now = time(0);
     strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S", localtime(&now));
 //	cout << Len << endl;
