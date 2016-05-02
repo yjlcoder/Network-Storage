@@ -1,4 +1,5 @@
 #include <zconf.h>
+#include <fcntl.h>
 #include <cstdlib>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -42,6 +43,8 @@ void createServer(int portNumber) {
         exit(0);
     }
 
+    fcntl(socketfd, O_NONBLOCK);
+
     sockaddr_in servaddr;
     sockaddr_in remaddr;
     socklen_t addrlen = sizeof(servaddr);
@@ -76,7 +79,6 @@ void createServer(int portNumber) {
         if(recvlen < 0) continue;
         uint16_t port = remaddr.sin_port;
         int found = find(socketfdSets, port);
-        fout << recvlen << endl;
         if(found == -1){
             //Can't find
             socketfdSets[getSocket] = port;
@@ -88,11 +90,9 @@ void createServer(int portNumber) {
             uint32_t *pid = (uint32_t *)buf;
             *pid = ntohl(*pid);
             pidSets[found] = *pid;
-            fout << "PID: " << pidSets[found] << endl;
         } else if (recvlen == 19){
             buf[recvlen] = '\0';
             timeSets[found] = buf;
-            fout << buf << endl;
 
             //get random number between 5000 and 9999
             srand(time(NULL) + getpid());
@@ -102,10 +102,8 @@ void createServer(int portNumber) {
         } else if (recvlen > 500){
             buf[recvlen] = '\0';
             randomStrSets[found] = buf;
-            fout << buf << endl;
             finishSocket += 1;
         }
-        fout << "FINISH" << endl;
         if(finishSocket == process)
             break;
     }
@@ -139,7 +137,6 @@ void createServer(int portNumber) {
 	    mysql_close(mysql);
     }
     close(socketfd);
-    fout << "EXIT" << endl;
     exit(0);
 }
 
