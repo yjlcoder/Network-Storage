@@ -155,7 +155,6 @@ int main(){
                             cout << "Sendto() failed with error code : " << WSAGetLastError() << endl;
                             exit(EXIT_FAILURE);
                         }
-                        fout << "SENT: " << ss.str() << endl;
                         break;
                     }
                     else continue;
