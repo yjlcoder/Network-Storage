@@ -5,9 +5,11 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <cstring>
 #include <vector>
 #include <algorithm>
+#include <zconf.h>
+#include <sys/stat.h>
+#include <sys/param.h>
 
 using namespace std;
 
@@ -20,14 +22,18 @@ struct Config{
 };
 
 void ReadFile(vector<Config> & configs);
+void initDaemon();
 
 int main(int argc, char * argv[]){
-    vector<Config> configs;
-    ReadFile(configs);
-    for(vector<Config>::iterator it = configs.begin(); it != configs.end(); it++){
-        transform(it->principle.begin(), it->principle.end(), it->principle.begin(), ::toupper);
-        transform(it->direction.begin(), it->direction.end(), it->direction.begin(), ::toupper);
-        cout << it->principle << ' ' << it->direction << endl;
+    pid_t pid = fork();
+    if(pid == -1){cout << "Fork Error" << endl; exit(EXIT_FAILURE);}
+    else if (pid > 0){
+        //Parent
+        exit(0);
+    } else if (pid == 0){
+        initDaemon();
+        vector<Config> configs;
+        ReadFile(configs);
     }
 }
 
@@ -53,5 +59,17 @@ void ReadFile(vector<Config> & configs){
         ss >> config.inAddress;
         ss >> config.inPorts;
         configs.push_back(config);
+    }
+    for(vector<Config>::iterator it = configs.begin(); it != configs.end(); it++){
+        transform(it->principle.begin(), it->principle.end(), it->principle.begin(), ::toupper);
+        transform(it->direction.begin(), it->direction.end(), it->direction.begin(), ::toupper);
+    }
+}
+
+void initDaemon(){
+    setsid();
+    umask(0);
+    for(int i = 0; i < NOFILE; i++){
+        close(i);
     }
 }
