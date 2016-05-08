@@ -16,6 +16,7 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <signal.h>
 #include "W1002-test6-util.h"
 
 #define BUFSIZE 10240
@@ -37,21 +38,34 @@ struct UDPTable{
     sockaddr_in myaddr;
     int mysocketfd;
 };
+vector<UDPPara> UDPParas;
+vector<UDPTable> UDPTables;
+char logbuf[BUFSIZE];
+char buf[BUFSIZE];
+
+void action(int signum){
+    ofstream fout("log.dat", ofstream::app);
+    fout << Log("Catch SIGTERM, exiting") << endl;
+    for(int i = 0; i < UDPParas.size(); i++){ close(UDPParas[i].socketfd); }
+    for(int i = 0; i < UDPTables.size(); i++){ close(UDPTables[i].mysocketfd); }
+    fout << Log("Succeed to close all sockets, EXIT") << endl;
+    fout.close();
+    exit(0);
+}
+
 
 int main(int argc, char * argv[]) {
-    ofstream cout("log.dat");
-    char logbuf[BUFSIZE];
-    char buf[BUFSIZE];
+    ofstream cout;
+    signal(SIGTERM, action);
     int maxfd;
     stringstream ss("");
+    cout.open("log.dat");
 
     //Read From Parameters
     if (argc <= 1) {
         cout << "No Parameters : -> END" << endl;
         return 0;
     }
-    vector<UDPPara> UDPParas;
-    vector<UDPTable> UDPTables;
     for (int i = 1; i < argc; i += 4) {
         UDPPara para;
         para.listenIP = argv[i];
@@ -156,7 +170,7 @@ int main(int argc, char * argv[]) {
             //Read from the port
             recvlen = recvfrom(it->socketfd, buf, BUFSIZE, 0, (sockaddr *) &remaddr, &socklen);
             buf[recvlen] = '\0';
-            sprintf(logbuf, "Recieve From %s:%d, Message:%s", inet_ntoa(remaddr.sin_addr), ntohs(remaddr.sin_port), buf);
+            sprintf(logbuf, "Recieve From %s:%d, Message:'%s'.", inet_ntoa(remaddr.sin_addr), ntohs(remaddr.sin_port), buf);
             cout << Log(logbuf) << endl;
 
             //Find in the UDPTables. if not exists, create one
