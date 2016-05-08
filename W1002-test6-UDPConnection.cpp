@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <climits>
 #include <zconf.h>
+#include <netdb.h>
 #include "W1002-test6-util.h"
 
 #define BUFSIZE 10240
@@ -60,6 +61,30 @@ int main(int argc, char * argv[]) {
     }
 
     cout << Log((char *) "Read From Parameters Complete") << endl;
+
+    hostent *he;
+    in_addr ** temp_addr;
+    for(int i = 0; i < UDPParas.size(); i++){
+        he = gethostbyname(UDPParas[i].listenIP.c_str());
+        if(he == NULL){
+            sprintf(logbuf, "Transfer hostname failed, Source: %s", UDPParas[i].listenIP.c_str());
+            cout << Log(logbuf) << endl;
+        }
+        temp_addr = (in_addr **) he->h_addr_list;
+        sprintf(logbuf, "Transfer hostname to IP, from %s to %s", UDPParas[i].listenIP.c_str(), inet_ntoa(*temp_addr[0]));
+        cout << Log(logbuf) << endl;
+        UDPParas[i].listenIP = inet_ntoa(*temp_addr[0]);
+
+        he = gethostbyname(UDPParas[i].transferIP.c_str());
+        if(he == NULL){
+            sprintf(logbuf, "Transfer hostname failed, Source: %s", UDPParas[i].transferIP.c_str());
+            cout << Log(logbuf) << endl;
+        }
+        temp_addr = (in_addr **) he->h_addr_list;
+        sprintf(logbuf, "Transfer hostname to IP, from %s to %s", UDPParas[i].transferIP.c_str(), inet_ntoa(*temp_addr[0]));
+        cout << Log(logbuf) << endl;
+        UDPParas[i].transferIP= inet_ntoa(*temp_addr[0]);
+    }
 
     //Create Initial Socket
     for (int i = 0; i < UDPParas.size(); i++) {

@@ -63,7 +63,7 @@ int main(int argc, char * argv[]){
         }
 
         for (; ;) {
-            FD_ZERO(&writeSet);
+            FD_ZERO(&writeSetudp);
             FD_SET(socketfd, &writeSet);
             int selectValue = select(socketfd + 1, NULL, &writeSet, NULL, NULL);
             if (selectValue <= 0) continue;
