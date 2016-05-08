@@ -14,6 +14,8 @@
 #include <climits>
 #include <zconf.h>
 #include <netdb.h>
+#include <stdlib.h>
+#include <errno.h>
 #include "W1002-test6-util.h"
 
 #define BUFSIZE 10240
