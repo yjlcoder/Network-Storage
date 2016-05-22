@@ -1,4 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Login</h1>
+    <form action="" method="post" name="register">
+        <div class="col-lg-3 hidden-md"></div>
+        <div class="col-lg-6 col-md-12">
+            <div class="input-group">
+                <label id="labelUsername" class="input-group-addon">用户名</label>
+                {{ form.username(**{'class':'form-control', 'placeholder':'用户名', 'aria-describedby':'labelUsername'})}}
+            </div>
+            {% for error in form.username.errors %}
+                <b style="color:red">{{ error }}</b>
+            {% endfor %}
+            <br />
+            <div class="input-group">
+                <label id="labelPassword" class="input-group-addon">密码</label>
+                {{ form.password(**{'class':'form-control', 'placeholder':'密码', 'aria-describedby':'labelPassword'})}}
+            </div>
+            {% for error in form.password.errors %}
+                <b style="color:red">{{ error }}</b>
+            {% endfor %}
+            <br />
+            <div class="input-group">
+                <label id="labelRememberMe" class="input-group-addon">记住我</label>
+                {{ form.remember_me(**{'class':'form-control'}) }}
+            </div>
+            <br />
+            <input type="submit" name="submit" value="确定" class="btn btn-success"></button>
+        </div>
+        <div class="col-lg-3 hidden-md"></div>
+    </form>
 {% endblock %}

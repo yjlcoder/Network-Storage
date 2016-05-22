@@ -1,4 +1,10 @@
 from flask import Flask
-app = Flask(__name__)
+from flask.ext.sqlalchemy import SQLAlchemy
+import pymysql
 
-from app import views
+pymysql.install_as_MySQLdb()
+app = Flask(__name__)
+app.config.from_object('config')
+db = SQLAlchemy(app)
+
+from app import views, models
