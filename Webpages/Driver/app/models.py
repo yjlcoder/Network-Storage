@@ -27,7 +27,12 @@ class User(db.Model):
 class File(db.Model):
     userid = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     virtualdir = db.Column(db.String(190), primary_key=True)
-    md5 = db.Column(db.CHAR(32), nullable=False)
+    md5 = db.Column(db.CHAR(32),db.ForeignKey('status.md5'), nullable=False)
 
     def __repr__(self):
         return "<UserID: %r, Virtual Directory: %r>" %(self.userid, self.virtualDir)
+
+class Status(db.Model):
+    md5 = db.Column(db.CHAR(32), primary_key=True)
+    status = db.Column(db.Integer)
+    files = db.relationship('File', backref = 'status', lazy='dynamic')
