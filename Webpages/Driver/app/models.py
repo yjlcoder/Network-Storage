@@ -34,5 +34,5 @@ class File(db.Model):
 
 class Status(db.Model):
     md5 = db.Column(db.CHAR(32), primary_key=True)
-    status = db.Column(db.Integer)
+    status = db.Column(db.Integer) # define: 1 - OK, 2 - In process 3 - Folder
     files = db.relationship('File', backref = 'status', lazy='dynamic')
