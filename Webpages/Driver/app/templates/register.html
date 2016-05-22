@@ -3,6 +3,9 @@
     <form action="" method="post" name="register">
         <div class="col-lg-3 hidden-md"></div>
         <div class="col-lg-6 col-md-12">
+            <div class="page-header">
+                <h3>注册</h3>
+            </div>
             <div class="input-group">
                 <label id="labelUsername" class="input-group-addon">用户名</label>
                 {{ form.username(**{'class':'form-control', 'placeholder':'用户名', 'aria-describedby':'labelUsername'})}}
@@ -27,7 +30,9 @@
                 <b style="color:red">{{ error }}</b>
             {% endfor %}
             <br />
-            <input type="submit" name="submit" value="确定" class="btn btn-success"></button>
+            <input type="submit" name="submit" value="确定" class="btn btn-success">
+            <p>已有帐号? <a href="{{ url_for('login') }}">点我登录</a> </p>
+
         </div>
         <div class="col-lg-3 hidden-md"></div>
     </form>
