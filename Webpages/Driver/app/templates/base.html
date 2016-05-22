@@ -38,8 +38,12 @@
         </form>
 
         <ul class="nav navbar-nav navbar-right">
-            <li><a href="{{ url_for('login') }}"> Login </a></li>
-            <li><a href="{{ url_for('register') }}"> Register </a></li>
+            {% if not current_user or current_user.is_authenticated == False  %}
+                <li><a href="{{ url_for('login') }}"> Log In </a></li>
+                <li><a href="{{ url_for('register') }}"> Register </a></li>
+            {% else %}
+                <li><a href="{{ url_for('logout') }}"> Log Out </a></li>
+            {% endif %}
         </ul>
 
     </div>
@@ -49,10 +53,11 @@
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     {% for message in messages %}
-        <div class="jumbotron">
+        <div class="alert alert-info">
             <p>{{ message }}</p>
         </div>
     {% endfor %}
+        <hr />
     {% endif %}
     {% endwith %}
 </div>

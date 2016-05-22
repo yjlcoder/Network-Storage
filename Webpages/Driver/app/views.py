@@ -1,4 +1,4 @@
-from flask.ext.login import login_user, login_required, logout_user, user_logged_in
+from flask.ext.login import login_user, login_required, logout_user, current_user
 from app import app, forms, db, models, login_manager
 from flask import render_template, request, redirect, flash
 import hashlib
@@ -13,6 +13,9 @@ def index():
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
+    if current_user is not None and current_user.is_authenticated:
+        flash("您已经登陆，请注销后重试")
+        redirect('index')
     form = forms.LoginForm(request.form)
     if request.method == "POST" and form.validate():
         user = models.User.query.filter_by(username=form.username.data).first()
