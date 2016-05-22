@@ -50,12 +50,7 @@ def register():
             flash("该用户名已经被注册")
             return redirect('register')
         user = models.User(username=form.username.data, password=hashlib.sha1(form.password.data.encode('utf-8')).hexdigest())
-        status = models.Status.query.filter_by(md5="00000000000000000000000000000000").first()
-        if status is None:
-            status = models.Status(status=3, md5="00000000000000000000000000000000")
-            db.session.add(status)
-            db.session.commit()
-        file = models.File(virtualdir='/', status=status, uploader=user)
+        file = models.File(virtualpath='/', uploader=user)
         db.session.add(user)
         db.session.commit()
         db.session.add(file)
