@@ -1,6 +1,7 @@
 from flask.ext.login import login_user, login_required, logout_user, current_user
 from app import app, forms, db, models, login_manager
 from flask import render_template, request, redirect, flash, url_for
+from app.utils import buildTree
 import hashlib
 
 
@@ -12,8 +13,9 @@ def index():
     if path is None or path == "":
         path = '/'
         return redirect(url_for('index', path=path))
-    #TODO: get data from database
-    return render_template("index.html", path = path)
+    files = models.File.query.filter_by(userid=current_user.id).all()
+    files = buildTree(files=files, visit=path)
+    return render_template("index.html", path=path, files=files)
 
 
 @app.route("/login", methods=['GET', 'POST'])
