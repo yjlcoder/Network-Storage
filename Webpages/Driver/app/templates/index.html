@@ -8,15 +8,13 @@
             {% if files.length == 0 %}
                 <h3 style="color: red">目录下无文件/文件夹</h3>
             {% endif %}
-            <ul>
+            <table class="table table-hover table-responsive">
                 {% for file in files %}
-                    <li>{{ file[0] }}
-                    {% if not file[1]%} 文件夹
-                    {% else %} 文件
-                    {% endif %}
-                    </li>
+                    <tr>
+                        <td>{{ file[0] }} {% if not file[1]%} 文件夹 {% else %} 文件 {% endif %} </td>
+                    </tr>
                 {% endfor %}
-            </ul>
+            </table>
         {% endif %}
     </ul>
 {% endblock %}
