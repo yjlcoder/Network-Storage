@@ -31,12 +31,19 @@
             <a class="navbar-brand" href="{{ url_for('index') }}">Cloud Driver</a>
         </div>
 
-        <form class="navbar-form navbar-left" role="search">
+        <div class="navbar-form navbar-left">
             <div class="form-group">
-                <input type="text" class="form-control" placeholder="Search">
+                <input id="pathInput" type="text" class="form-control" placeholder="路径">
             </div>
-            <button type="submit" class="btn btn-default">搜索</button>
-        </form>
+            <button type="submit" class="btn btn-default" onclick="GoToPath()">路径直达</button>
+        </div>
+
+        <script type="text/javascript">
+            function GoToPath(){
+                path = $('#pathInput').val()
+                $(location).attr('href', 'index?path='+path)
+            }
+        </script>
 
         <ul class="nav navbar-nav navbar-right">
             {% if not current_user or current_user.is_authenticated == False  %}
