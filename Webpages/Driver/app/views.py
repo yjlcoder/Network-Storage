@@ -15,7 +15,8 @@ def index():
         return redirect(url_for('index', path=path))
     files = models.File.query.filter_by(userid=current_user.id).all()
     files = buildTree(files=files, visit=path)
-    return render_template("index.html", path=path, files=files)
+    files.sort(key=lambda x: x[0])
+    return render_template("index.html", path=path.split('/'), files=files)
 
 
 @app.route("/login", methods=['GET', 'POST'])
