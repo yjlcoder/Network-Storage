@@ -5,8 +5,9 @@
     {% else %}
         <ol class="breadcrumb">
         {% set pre = "/" %}
+        {% set pathList = path.split('/') %}
         <li><a href="{{ url_for('index', path=pre) }}">Home</a></li>
-        {% for dir in path if dir != ""%}
+        {% for dir in pathList if dir != ""%}
             <li><a href="{{ url_for('index', path=pre+dir) }}">{{ dir }}</a></li>
             {% set pre = pre + dir + "/" %}
         {% endfor %}
@@ -14,20 +15,22 @@
 
         {% if files.length == 0 %}
             <h3 style="color: red">目录下无文件/文件夹</h3>
+        {% else %}
+            <table class="table table-hover table-responsive">
+                {% for file in files %}
+                    <tr>
+                        <td>
+                        {% if not file[1] %}
+                            <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+                            &nbsp; &nbsp; <a href="{{ url_for('index', path=path+file[0]+'/') }}">{{ file[0] }}</a>
+                        {% else %}
+                            <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                            &nbsp; &nbsp; <a>{{ file[0] }}</a>
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
         {% endif %}
-        <table class="table table-hover table-responsive">
-            {% for file in files %}
-                <tr>
-                    <td>
-                    {% if not file[1] %}
-                        <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
-                    {% else %}
-                        <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                    {% endif %}
-                        &nbsp;&nbsp;{{ file[0] }}
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
     {% endif %}
 {% endblock %}
