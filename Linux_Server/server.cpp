@@ -24,6 +24,12 @@
 #include <arpa/inet.h>
 #include <vector>
 
+#define PATHSIZE 1024
+#define NAMESIZE 256
+#define PSSWSIZE 256
+#define BUFFSIZE 2048
+#define FAILURE -1
+
 using namespace std;
 
 int writeLog(const char * message){
@@ -37,118 +43,59 @@ int writeLog(const char * message){
 }
 
 int regist(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
+	unsigned char NLen, PLen;
+	char name[NAMESIZE], password[PSSWSIZE];
+	long L;
+	L = recv(sockfd, &NLen, sizeof(NLen), MSG_WAITALL);
+	if (L != sizeof(NLen)) return FAILURE;
+	L = recv(sockfd, name, NLen, MSG_WAITALL);
+	if (L != NLen) return FAILURE;
+	L = recv(sockfd, &PLen, sizeof(PLen), MSG_WAITALL);
+	if (L != sizeof(PLen)) return FAILURE;
+	L = recv(sockfd, password, PLen, MSG_WAITALL);
+	if (L != PLen) return FAILURE;
 
-	unsigned char NLen, PLen, flag;
-	char name[256], password[256];
-	read(sockfd, &NLen, 1);
-	read(sockfd, name, NLen);
-	read(sockfd, &PLen, 1);
-	read(sockfd, password, PLen);
-
+	char flag;
 	//flag = sql();
 	
-	for (;;) {
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if (ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		}
-		if (ret == 0) continue;
-		write(sockfd, &flag, 1);
-		break;
-	}
+	L = send(sockfd, &flag, sizeof(flag), 0);
+	if (L != sizeof(flag)) return FAILURE;
 	return 0;
 }
 
 int logIn(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
-
 	unsigned char NLen, PLen;
-	char name[256], password[256];
-	int UID;
-	read(sockfd, &NLen, 1);
-	read(sockfd, name, NLen);
-	read(sockfd, &PLen, 1);
-	read(sockfd, password, PLen);
-
+	char name[NAMESIZE], password[PSSWSIZE];
+	long UID, L;
+	L = recv(sockfd, &NLen, sizeof(NLen), MSG_WAITALL);
+	if (L != sizeof(NLen)) return FAILURE;
+	L = recv(sockfd, name, NLen, MSG_WAITALL);
+	if (L != NLen) return FAILURE;
+	L = recv(sockfd, &PLen, sizeof(PLen), MSG_WAITALL);
+	if (L != sizeof(PLen)) return FAILURE;
+	L = recv(sockfd, password, PLen, MSG_WAITALL);
+	if (L != PLen) return FAILURE;
+	
 	//UID = sql();
 	
 	UID = htonl(UID);
-	for (;;) {
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if (ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		}
-		if (ret == 0) continue;
-		write(sockfd, &UID, 4);
-		break;
-	}
+	L = send(sockfd, &UID, sizeof(UID), 0);
+	if (L != sizeof(UID)) return FAILURE;
 	return 0;
 }
 
 int getFileList(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
-
-	int Len, UID;
-	char path[1024];
-	read(sockfd, &UID, 4);
-	read(sockfd, &Len, 4);
+	long Len, UID, L;
+	char path[PATHSIZE];
+	L = recv(sockfd, &UID, sizeof(Len), MSG_WAITALL);
+	if (L != sizeof(Len)) return FAILURE;
 	UID = ntohl(UID);
+	L = recv(sockfd, &Len, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return FAILURE;
 	Len = ntohl(Len);
-	read(sockfd, path, Len);
-	
+	L = recv(sockfd, path, Len, MSG_WAITALL);
+	if (L != Len) return FAILURE;
+
 	vector<string> fileList;
 
 	
@@ -156,38 +103,15 @@ int getFileList(int sockfd){
 	
 	
 	unsigned int num = htonl(fileList.size());
-	for (;;) {
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if(ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		} 
-		if (ret == 0) continue;
-		write(sockfd, &num, 4);
-		break;
-	}
+	L = send(sockfd, &num, sizeof(num), 0);
+	if (L != sizeof(num)) return FAILURE;
 
 	for (int i = 0; i < fileList.size(); ++i) {
-		for (;;) {
-			FD_ZERO(&fds);
-			FD_SET(sockfd, &fds);
-			timeout.tv_sec = 60;                
-			timeout.tv_usec = 0;
-			int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-			if(ret < 0) {
-				writeLog(strerror(errno));
-				return -1;
-			} 
-			if (ret == 0) continue;
-			int size = htonl(fileList[i].length());
-			write(sockfd, &size, 4);
-			write(sockfd, fileList[i].c_str(), fileList[i].length());
-			break;
-		}
+		int size = htonl(fileList[i].length());
+		L = send(sockfd, &size, sizeof(size), 0);
+		if (L != sizeof(size)) return FAILURE;
+		L = send(sockfd, fileList[i].c_str(), fileList[i].length(), 0);
+		if (L != fileList[i].length()) return FAILURE;
 	}
 
 	return 0;
@@ -198,150 +122,84 @@ int addFile(int sockfd){
 }
 
 int delFile(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
-
-	int Len, UID;
-	char path[1024];
-	read(sockfd, &UID, 4);
-	read(sockfd, &Len, 4);
+	long Len, UID, L;
+	char path[PATHSIZE];
+	L = recv(sockfd, &UID, sizeof(Len), MSG_WAITALL);
+	if (L != sizeof(Len)) return FAILURE;
 	UID = ntohl(UID);
+	L = recv(sockfd, &Len, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return FAILURE;
 	Len = ntohl(Len);
-	read(sockfd, path, Len);
-	
-	char flag;
+	L = recv(sockfd, path, Len, MSG_WAITALL);
+	if (L != Len) return FAILURE;
 
+	char flag;
 	//flag = sql();
 	
-	for (;;) {
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if(ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		} 
-		if (ret == 0) continue;
-		write(sockfd, &flag, 1);
-		break;
-	}
+	L = send(sockfd, &flag, sizeof(flag), 0);
+	if (L != sizeof(flag)) return FAILURE;
 
 	return 0;
 }
 
 int moveFile(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
-
-	int SLen, DLen, UID;
-	char SPath[1024], DPath[1024];
-	read(sockfd, &UID, 4);
+	int SLen, DLen, UID, L;
+	char SPath[PATHSIZE], DPath[PATHSIZE];
+	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
-	
-	read(sockfd, &SLen, 4);
+
+	L = recv(sockfd, &SLen, sizeof(SLen), MSG_WAITALL);
+	if (L != sizeof(SLen)) return FAILURE;
 	SLen = ntohl(SLen);
-	read(sockfd, SPath, SLen);
 	
-	read(sockfd, &DLen, 4);
+	L = recv(sockfd, SPath, SLen, MSG_WAITALL);
+	if (L != SLen) return FAILURE;
+	
+	L = recv(sockfd, &DLen, sizeof(DLen), MSG_WAITALL);
+	if (L != sizeof(DLen)) return FAILURE;
 	DLen = ntohl(DLen);
-	read(sockfd, DPath, DLen);
-
+	
+	L = recv(sockfd, DPath, DLen, MSG_WAITALL);
+	if (L != DLen) return FAILURE;
+	
 	char flag;
-
 	//flag = sql();
 	
-	for (;;) {
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if(ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		} 
-		if (ret == 0) continue;
-		write(sockfd, &flag, 1);
-		break;
-	}
+	
+	L = write(sockfd, &flag, sizeof(flag));
+	if (L != sizeof(flag)) return FAILURE;
+	return 0;
 }
 
 int copyFile(int sockfd){
-	struct timeval timeout;
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(sockfd, &fds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &fds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
-
-	int SLen, DLen, UID;
-	char SPath[1024], DPath[1024];
-	read(sockfd, &UID, 4);
+	int SLen, DLen, UID, L;
+	char SPath[PATHSIZE], DPath[PATHSIZE];
+	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
-	
-	read(sockfd, &SLen, 4);
+
+	L = recv(sockfd, &SLen, sizeof(SLen), MSG_WAITALL);
+	if (L != sizeof(SLen)) return FAILURE;
 	SLen = ntohl(SLen);
-	read(sockfd, SPath, SLen);
 	
-	read(sockfd, &DLen, 4);
+	L = recv(sockfd, SPath, SLen, MSG_WAITALL);
+	if (L != SLen) return FAILURE;
+	
+	L = recv(sockfd, &DLen, sizeof(DLen), MSG_WAITALL);
+	if (L != sizeof(DLen)) return FAILURE;
 	DLen = ntohl(DLen);
-	read(sockfd, DPath, DLen);
-
+	
+	L = recv(sockfd, DPath, DLen, MSG_WAITALL);
+	if (L != DLen) return FAILURE;
+	
 	char flag;
-
 	//flag = sql();
 	
-	for (;;) {
-		FD_ZERO(&fds);
-		FD_SET(sockfd, &fds);
-		timeout.tv_sec = 60;                
-		timeout.tv_usec = 0;
-		int ret = select((int)sockfd+1, NULL, &fds, NULL, &timeout);
-		if(ret < 0) {
-			writeLog(strerror(errno));
-			return -1;
-		} 
-		if (ret == 0) continue;
-		write(sockfd, &flag, 1);
-		break;
-	}
+	
+	L = write(sockfd, &flag, sizeof(flag));
+	if (L != sizeof(flag)) return FAILURE;
+	return 0;
 }
 
 int downLoad(int sockfd){
@@ -349,26 +207,11 @@ int downLoad(int sockfd){
 }
 
 int exec(int sockfd){
-    struct timeval timeout;
-	fd_set readfds;
-	FD_ZERO(&readfds);
-	FD_SET(sockfd, &readfds);
-	
-	timeout.tv_sec = 60;                
-	timeout.tv_usec = 0;
-	int ret = select((int)sockfd+1, &readfds, NULL, NULL, &timeout);
-	if(ret < 0) {
-		writeLog(strerror(errno));
-		return -1;
-	} else if(ret == 0) {
-		writeLog("time out...");
-		return -1;
-	}
 	char mark;
-	int L = read(sockfd, &mark, 1);
+	int L = recv(sockfd, &mark, sizeof(mark), MSG_WAITALL);
 	if (L <= 0) {
 		writeLog(strerror(errno));
-		return -1;
+		return FAILURE;
 	}
 
 	switch (mark) {
@@ -413,22 +256,10 @@ void createServer(int portNumber){
     struct sockaddr_in client_addr;
     sockaddr_in servaddr;
 
-    if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+    if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) == FAILURE){
         writeLog(strerror(errno)); 
         exit(0);
     }
-
-    int val;
-	if ((val = fcntl(listenfd, F_GETFL, 0)) < 0) {
-        writeLog(strerror(errno)); 
-		close(listenfd);
-		exit(0);
-	}
-	if (fcntl(listenfd, F_SETFL, val|O_NONBLOCK) < 0) {
-        writeLog(strerror(errno)); 
-		close(listenfd);
-		exit(0);	
-	}
     
 	int opt = 1;
 	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
@@ -441,45 +272,31 @@ void createServer(int portNumber){
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(uint16_t(portNumber));
     
-    if(bind(listenfd, (sockaddr *)&servaddr, sizeof(servaddr)) == -1){
+    if(bind(listenfd, (sockaddr *)&servaddr, sizeof(servaddr)) == FAILURE){
         writeLog(strerror(errno)); 
         exit(0);
     }
 
-    if(listen(listenfd, 500) == -1){
+    if(listen(listenfd, 500) == FAILURE){
         writeLog(strerror(errno)); 
         exit(0);
     }
     
 	for(;;) {
-		fd_set readfds;
-		FD_ZERO(&readfds);
-		FD_SET(listenfd, &readfds);
-		
-		timeout.tv_sec = 15;                
-		timeout.tv_usec = 0;
-        int ret = select((int)listenfd+1, &readfds, NULL, NULL, &timeout);
-        if(ret < 0) {
-            writeLog(strerror(errno));
+		struct sockaddr_in client_addr;
+		unsigned int sin_size = sizeof(client_addr);
+		int sockCli = accept(listenfd, ( struct sockaddr * ) & client_addr, & sin_size);
+		if (sockCli < 0) {
+			writeLog(strerror(errno));
 			continue;
-        } else if(ret == 0) {
-            continue;
-        }
-		
-		if(FD_ISSET(listenfd, &readfds)) {
-			struct sockaddr_in client_addr;
-			unsigned int sin_size = sizeof(client_addr);
-			int sockCli = accept(listenfd, ( struct sockaddr * ) & client_addr, & sin_size);
-			if (sockCli < 0) {
-				writeLog(strerror(errno));
-			}
-			int pid = fork();
-			if (pid == 0) {
-				exec(sockCli);
-			} else {
-				close(sockCli);
-			}
-        }
+		}
+		int pid = fork();
+		if (pid == 0) {
+			exec(sockCli);
+			exit(0);
+		} else {
+			close(sockCli);
+		}
     } 
 	
 }
