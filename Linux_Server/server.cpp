@@ -36,6 +36,7 @@
 
 #define CREATEFILEKEY (key_t)0x1021
 #define FILEOPKEY (key_t)0x0907
+#define FILEMERGEKEY (key_t)0x1210
 
 using namespace std;
 
@@ -197,6 +198,7 @@ int fileExist(int sockfd, const char * fileName, const char * md5_str){
 }
 
 int semCreateFile = sem_init(CREATEFILEKEY, 1);
+int semFileMerge = sem_init(FILEMERGEKEY, 1);
 
 int createConfig(const char * fileName, const char * md5_str, const long long fileSize){
 	
@@ -234,13 +236,75 @@ int createConfig(const char * fileName, const char * md5_str, const long long fi
 	return 0;
 }
 
-int recvFile(int sockfd, const char * md5_str, int blockNum){
 
+
+int recvFile(int sockfd, const char * md5_str, int blockNum){
+	int size, L;
+	char buff[2048];
+	unsigned char md5[16];
+	unsigned char md5_chk[16];
+	char md5_32[33];
+	char path[1024];
+
+	char md5_32[33];
+	for (int i = 0; i < 16; ++i) {
+		sprintf(md5_32 + i*2, "%x", md5_str[i]);
+	}
+	sprintf(path, "upload/%x/%s/%d", md5_str[0], md5_32, blockNum);
+
+	L = recv(sockfd, &size, sizeof(size), MSG_WAITALL);
+	if (L != sizeof(size)) return -1;
+	size = ntohl(size);
+	MD5_CTX c;
+	ofstream file(path);
+	while (size > 0) {
+		int s = min(size, 1024);
+		size -= s;
+		L = recv(sockfd, buff, s, MSG_WAITALL);
+		if (L != s) return -1;
+		MD5_Update(&c, buff, L);
+		file.write(buff, L);
+	}
+
+	L = recv(sockfd, md5, 16, MSG_WAITALL);
+	if (L != 16) return -1;
+	MD5_Final(md5_chk,&c);
+	for (int i = 0; i < 16; ++i) 
+		if (md5_chk[i] != md5[i]) return -1;
+	return 0;
 }
 
 int mergeFile(const char * md5_str, const long fileL, const long long fileSize){
+	char compPath[1024];
+	
+	char md5_32[33];
+	for (int i = 0; i < 16; ++i) {
+		sprintf(md5_32 + i*2, "%x", md5_str[i]);
+	}
+	sprintf(compPath, "file/%x/%s", md5_str[0], md5_32);
 
+	P(semFileMerge);
+	if (access(compPath, 0) == -1) {
+		ofstream compF(compPath, ios::binary);
+		for (int i = 0; i < fileL; ++i) {
+			char sourPath[1024];
+			sprintf(sourPath, "upload/%x/%s/%d", md5_str[0], md5_32, i);
+			ifstream sourF(sourPath, ios::binary);
+			compF << sourF.rdbuf();
+		}
+	}
+
+	char cmd[1024];
+	sprintf(cmd, "rm -rf upload/%x/%s", md5_str[0], md5_32);
+	system(cmd);
+	V(semFileMerge);
+
+	//sql()
+
+	return 0;
 }
+
+
 
 int semFileOp = sem_init(FILEOPKEY, 1);
 int selectBlock(int sockfd, const char * path, const char * md5_str, const long long fileSize){
@@ -467,7 +531,7 @@ int downLoad(int sockfd){
 	//MD5 = sql();
 	//flag = sql(MD5.c_str());
 	
-
+	
 	long long res;
 	if (flag == -1) res = -1;
 	ifstream file(MD5.c_str(), ios::binary);
