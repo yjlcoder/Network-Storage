@@ -2,7 +2,10 @@ from flask.ext.login import login_user, login_required, logout_user, current_use
 from app import app, forms, db, models, login_manager
 from flask import render_template, request, redirect, flash, url_for
 from app.utils import buildTree
+from werkzeug.utils import secure_filename
 import hashlib
+import os
+import datetime
 
 
 @app.route("/")
@@ -15,7 +18,8 @@ def index():
         return redirect(url_for('index', path=path))
     files = models.File.query.filter_by(userid=current_user.id).all()
     files = buildTree(files=files, visit=path)
-    files.sort(key=lambda x: x[0])
+    if files is not None:
+        files.sort(key=lambda x: x[0])
     return render_template("index.html", path=path, files=files)
 
 
@@ -67,6 +71,7 @@ def register():
 def load_user(user_id):
     return models.User.query.get(int(user_id))
 
+
 @login_manager.unauthorized_handler
 def unauthorized():
     return redirect('login')
@@ -78,3 +83,43 @@ def logout():
     flash("注销成功")
     logout_user()
     return redirect('login')
+
+
+@app.route('/upload', methods=['POST'])
+@login_required
+def upload():
+    md5 = request.form['md5']
+    saveto = request.form['saveto']
+    name = request.form['name']
+    path = os.path.join(app.config['UPLOADED_FOLDER'], md5)
+    if os.path.isfile(path):
+        flash("秒传成功")
+        file = models.File(
+            userid = current_user.id,
+            virtualpath = saveto + name,
+            md5 = md5
+        )
+        db.session.add(file)
+        db.session.commit()
+    else:
+        form = forms.UploadForm(request.form)
+        file = request.files[form.file.name]
+        if file:
+            file.save(path)
+            status = models.Status(
+                md5=md5,
+                status=1
+            )
+            db.session.add(status)
+            db.session.commit()
+            file = models.File(
+                userid = current_user.id,
+                virtualpath = saveto + name,
+                status=status
+            )
+            db.session.add(file)
+            db.session.commit()
+            flash("文件上传成功")
+        else:
+            flash("文件上传失败")
+    return redirect(url_for('index', path=request.args.get('path')))

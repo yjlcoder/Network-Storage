@@ -1,5 +1,5 @@
 from app import app
-from wtforms import Form, BooleanField, StringField, PasswordField
+from wtforms import Form, BooleanField, StringField, PasswordField, FileField
 from wtforms import validators, ValidationError
 
 def usernameCheck(form, field):
@@ -24,3 +24,9 @@ class LoginForm(Form):
 
     def __repr__(self):
         return "Username:" + self.username.data + ", Password: " + self.password.data + ", Remember Me:" + str(self.remember_me.data)
+
+class UploadForm(Form):
+    file = FileField('UploadFile')
+    saveto = StringField("SaveTo", [validators.DataRequired(message="请输入存储路径")])
+    name = StringField("Name", [validators.DataRequired(message="命名为"), validators.Length(max=64, message="请降低文件名长度")])
+    md5 = StringField("MD5", [validators.DataRequired(message="计算MD5中...")])
