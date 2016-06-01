@@ -6,6 +6,10 @@
 #include<mysql/mysql.h> 
 using namespace std;
 
+void DB_Operate::Debug_Out(string s)
+{
+	cout << s << endl;
+}
 DB_Operate::DB_Operate()
 {
 	db.initDB("localhost", "root", "root123", "driver"); 
@@ -16,12 +20,10 @@ bool DB_Operate::Show_User()
 	int i, j;
 	vector<string> SQL_ans;
 	SQL_ans.clear();
-	db.exeSQL_SELECT("select * from user", SQL_ans);
+	db.exeSQL_SELECT("select * from user order by userid", SQL_ans);
 	for (i = 0; i < SQL_ans.size(); i += 3)
 	{
-		for (j = i; j < i+3; j ++)
-			cout << SQL_ans[j] << " ";
-		cout << endl;
+		Debug_Out(SQL_ans[i]+" "+SQL_ans[i+1]+" "+SQL_ans[i+2]);
 	}
 }
 bool DB_Operate::Show_File()
@@ -29,12 +31,10 @@ bool DB_Operate::Show_File()
 	int i, j;
 	vector<string> SQL_ans;
 	SQL_ans.clear();
-	db.exeSQL_SELECT("select * from file", SQL_ans);
+	db.exeSQL_SELECT("select * from file order by userid, virtualpath", SQL_ans);
 	for (i = 0; i < SQL_ans.size(); i += 3)
 	{
-		for (j = i; j < i+3; j ++)
-			cout << SQL_ans[j] << " ";
-		cout << endl;
+		Debug_Out(SQL_ans[i]+" "+SQL_ans[i+1]+" "+SQL_ans[i+2]);
 	}
 }
 
@@ -48,7 +48,8 @@ vector<string> DB_Operate::Find_File_List(vector<string> s, string aim_s)
 	ans.clear();
 	if (aim_s[aim_len-1] != '/')
 	{
-		cout << "your directory is illegal" << endl;
+//		cout << "your directory is illegal" << endl;
+		Debug_Out("your directory is illegal");
 		return ans;
 	}
 	for (i = 0; i < s.size(); i ++)
@@ -94,28 +95,36 @@ bool DB_Operate::Insert_User(string Username, string Password)
 {
 	vector<string> SQL_ans;
 	string DB_Command;
-	cout << "检查Username是否存在" << endl;
+//	cout << "检查Username是否存在" << endl;
+	Debug_Out("检查Username是否存在");
+	
 	DB_Command = "SELECT * FROM user WHERE username = \"" + Username + "\"";
-	cout << DB_Command << endl;
+//	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	if (SQL_ans.size() > 0)
 	{	
-		cout << "该username已经存在" << endl;
+//		cout << "该username已经存在" << endl;
+		Debug_Out("该username已经存在");
 		return false;
 	}
-	cout << "增加个用户到数据库当中" << endl;
+//	cout << "增加个用户到数据库当中" << endl;
+	Debug_Out("增加个用户到数据库当中");
 	DB_Command = "INSERT INTO user(username, password) VALUES(\"" + Username + "\", \"" + Password + "\")";
-	cout << DB_Command << endl;
+//	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear(); 
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		cout << "添加用户信息成功" << endl;
+//		cout << "添加用户信息成功" << endl;
+		Debug_Out("添加用户信息成功");
 		return true;
 	}
 	else
 	{
-		cout << "添加用户信息失败" << endl;
+//		cout << "添加用户信息失败" << endl;
+		Debug_Out("添加用户信息失败");
 		return false;
 	}
 }
@@ -128,12 +137,15 @@ int DB_Operate::Check_User(string Username, string Password)
 	stringstream ss;
 	vector<string> SQL_ans;
 	string DB_Command;
-	cout << "检查数据库中有没有该Username和Password" << endl;
+//	cout << "检查数据库中有没有该Username和Password" << endl;
+	Debug_Out("检查数据库中有没有该Username和Password");
 	DB_Command = "SELECT id FROM user WHERE username = \"" + Username + "\" AND password = \"" + Password + "\""; 
-	cout << DB_Command << endl;
+//	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
-	cout << "得到该用户的id" << endl;
+//	cout << "得到该用户的id" << endl;
+	Debug_Out("得到该用户的id");
 	if (SQL_ans.size() == 0)
 	{
 //		cout << -1 << endl;
@@ -156,7 +168,8 @@ vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 	string len;
 	string DB_Command;
 	stringstream ss;
-	cout << "查询出文件列表" << endl;
+//	cout << "查询出文件列表" << endl;
+	Debug_Out("查询出文件列表");
 	ss << Virtual_Path.size();
 	ss >> len;
 //	cout << len << endl;
@@ -165,12 +178,15 @@ vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 		return ans;
 	DB_Command = "SELECT virtualpath FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
 	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	ans = Find_File_List(SQL_ans, Virtual_Path);
-	cout << "得到文件目录" << endl;
+//	cout << "得到文件目录" << endl;
+	Debug_Out("得到文件目录");
 	for (int i = 0; i < ans.size(); i ++)
-		cout << ans[i] << endl;
+//		cout << ans[i] << endl;
+		Debug_Out(ans[i]);
 	return ans;
 }
 
@@ -180,21 +196,26 @@ int DB_Operate::Query_Md5_Statu(string Md5)
 	vector<string> SQL_ans;
 	int ans;
 	stringstream ss;
-	cout << "查询MD5的状态" << endl;
+	Debug_Out("查询MD5的状态");
+//	cout << "查询MD5的状态" << endl;
 	string DB_Command;
 	DB_Command = "SELECT status FROM status WHERE md5 = \"" + Md5 + "\"";
-	cout << DB_Command << endl;
+//	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
-	cout << "该MD5的状态为：" << endl;
+//	cout << "该MD5的状态为：" << endl;
+	Debug_Out("该MD5的状态为：");
 	if (SQL_ans.size() == 0)
 	{
-		cout << -1 << endl;
+//		cout << -1 << endl;
+		Debug_Out("-1");
 		return -1;
 	}
 	else 
 	{
-		cout << SQL_ans[0] << endl;
+//		cout << SQL_ans[0] << endl;
+		Debug_Out(SQL_ans[0]);
 		ss << SQL_ans[0];
 		ss >> ans;
 		return ans;
@@ -206,19 +227,19 @@ int DB_Operate::Query_Md5_Statu(string Md5)
 bool DB_Operate::Update_Md5_Statu(string Md5, string statu)
 {
 	vector<string> SQL_ans;
-	cout << "修改MD5的状态" << endl;
+	Debug_Out("修改MD5的状态");
 	string DB_Command;
 	DB_Command = "UPDATE status SET status = " + statu + " WHERE md5 = \"" + Md5 + "\"";
-	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		cout << "修改状态成功" << endl;
+		Debug_Out("修改状态成功");
 		return true;
 	}
 	else
 	{
-		cout << "修改状态失败" << endl;
+		Debug_Out("修改状态失败");
 		return false; 
 	}
 } 
@@ -227,20 +248,20 @@ bool DB_Operate::Update_Md5_Statu(string Md5, string statu)
 //添加成功则返回true（不存在该MD5），失败则返回false（已经存在该MD5） 
 bool DB_Operate::Insert_Md5_Statu(string Md5, string statu = NULL)
 {
-	cout << "添加MD5的状态" << endl;
+	Debug_Out("添加MD5的状态");
 	string DB_Command;
 	vector<string> SQL_ans;
 	DB_Command = "INSERT INTO status(md5, status) VALUES(\"" + Md5 + "\", " + statu + ")"; 
-	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		cout << "添加状态成功" << endl;
+		Debug_Out("添加状态成功");
 		return true;
 	}
 	else 
 	{
-		cout << "添加状态失败" << endl;
+		Debug_Out("添加状态失败");
 		return false;
 	}
 }
@@ -249,22 +270,22 @@ bool DB_Operate::Insert_Md5_Statu(string Md5, string statu = NULL)
 string DB_Operate::Query_Md5(string User_Id, string Virtual_Path)
 {
 	vector<string> SQL_ans;
-	cout << "查询文件的MD5号" << endl;
+	Debug_Out("查询文件的MD5号");
 	string DB_Command;
 	DB_Command = "SELECT md5 FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
-	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	if (SQL_ans.size() > 0)
 	{
-		cout << "该文件的MD号为：" << endl;
-		cout << SQL_ans[0] << endl;
+		Debug_Out("该文件的MD号为：");
+		Debug_Out(SQL_ans[0]);
 		return SQL_ans[0];
 	}
 	else
 	{
-		cout << "查询文件MD号失败，返回NULL" << endl;
-		cout << "NULL" << endl;
+		Debug_Out("查询文件MD号失败，返回NULL");
+		Debug_Out("NULL");
 		return "NULL";
 	}
 }
@@ -273,22 +294,22 @@ string DB_Operate::Query_Md5(string User_Id, string Virtual_Path)
 //成功返回true，失败返回false 
 bool DB_Operate::Insert_File_Info(string User_Id, string Virtual_Path, string Md5 = "NULL")
 {
-	cout << "插入一条文件记录" << endl;
+	Debug_Out("插入一条文件记录");
 	string DB_Command;
 	vector<string> ans;
 	if (Md5 == "NULL")	
 		DB_Command = "INSERT INTO file(userid, virtualpath, md5) VALUES(" + User_Id + ", \"" + Virtual_Path + "\", " + Md5 + ")";
 	else DB_Command = "INSERT INTO file(userid, virtualpath, md5) VALUES(" + User_Id + ", \"" + Virtual_Path + "\", \"" + Md5 + "\")";
-	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	ans.clear();
 	if (db.exeSQL(DB_Command, ans) == false)
 	{
-		cout << "插入文件记录失败" << endl;
+		Debug_Out("插入文件记录失败");
 		return false;
 	}
 	else 
 	{
-		cout << "插入文件记录成功" << endl;
+		Debug_Out("插入文件记录成功");
 		return true;
 	}
 }
@@ -297,7 +318,7 @@ bool DB_Operate::Insert_File_Info(string User_Id, string Virtual_Path, string Md
 //文件/文件夹在数据库中不存在，则返回false,否则，删除记录，并返回true
 bool DB_Operate::Delete_File_Info(string User_Id, string Virtual_Path)
 {
-	cout << "删除文件/文件夹" << endl;
+	Debug_Out("删除文件/文件夹");
 	string DB_Command, len;
 	stringstream ss;
 	vector<string> SQL_ans;
@@ -306,16 +327,135 @@ bool DB_Operate::Delete_File_Info(string User_Id, string Virtual_Path)
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
 		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
 	else DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
-	cout << DB_Command << endl;
+	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		cout << "删除文件或文件夹成功" << endl;
+		Debug_Out("删除文件或文件夹成功");
 		return true;
 	}
 	else
 	{
-		cout << "删除文件或文件夹失败" << endl;
+		Debug_Out("删除文件或文件夹失败");
 		return false;
 	}
 } 
+
+//复制文件夹或文件，根据用户uid，源文件路径，目标文件路径，复制一系列记录		
+//如果文件存在，则复制为filename(i)
+//如果复制失败，则返回false
+//如果复制成功，则返回true
+//一个文件夹下不能同时出现filename和filename/
+bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_Path)
+{
+	Debug_Out("复制文件/文件夹");
+	stringstream ss;
+	string DB_Command, len;
+	int i, j;
+	int virtual_path_len = Virtual_Path.size();
+	int aim_path_len = Aim_Path.size();
+	vector<string> SQL_ans;
+	vector<File_Info> Copy_File_Info;
+	ss.clear();
+	ss.str("");
+	ss << Virtual_Path.size();
+	ss >> len;
+	if (Virtual_Path[Virtual_Path.size()-1] == '/')
+		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+	else DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL_SELECT(DB_Command, SQL_ans) == false)
+		return false;
+	if (SQL_ans.size() == 0)
+	{
+		Debug_Out("该文件/文件夹不存在");
+		return false;
+	}
+	Copy_File_Info.clear();
+	for (i = 0; i < SQL_ans.size(); i += 3)
+	{
+		Debug_Out(SQL_ans[i] + " " + SQL_ans[i+1] + " " + SQL_ans[i+2]);
+		Copy_File_Info.push_back(File_Info(SQL_ans[i], SQL_ans[i+1], SQL_ans[i+2]));
+	}
+	for (i = 0; i < Copy_File_Info.size(); i ++)
+	{
+		Copy_File_Info[i].Virtual_Path.replace(0, virtual_path_len, Aim_Path);	
+	}
+	DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
+	for (i = 1; i < Copy_File_Info.size(); i ++)
+	{
+		DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
+	}
+	DB_Command += ";";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL(DB_Command, SQL_ans) == false)
+		return false;
+	return true;
+}
+
+//更改文件/文件夹名称：根据用户uid，文件虚拟路径和修改后得文件/文件名路径，在数据库中修改一条/一系列记录
+//需要保证修改后的文件名/文件夹名不存在
+bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Aim_Path)
+{
+	if (Virtual_Path.size() <= 1)
+		return false;
+	Debug_Out("重命名文件/文件夹");
+	stringstream ss;
+	string DB_Command, len;
+	int i, j;
+	int virtual_path_len = Virtual_Path.size();
+	int aim_path_len = Aim_Path.size();
+	vector<string> SQL_ans;
+	vector<File_Info> Copy_File_Info;
+	ss.clear();
+	ss.str("");
+	ss << Virtual_Path.size();
+	ss >> len;
+	if (Virtual_Path[Virtual_Path.size()-1] == '/')
+		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+	else DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL_SELECT(DB_Command, SQL_ans) == false)
+		return false;
+	if (SQL_ans.size() == 0)
+	{
+		Debug_Out("该文件/文件夹不存在");
+		return false;
+	}
+	Copy_File_Info.clear();
+	for (i = 0; i < SQL_ans.size(); i += 3)
+	{
+		Debug_Out(SQL_ans[i] + " " + SQL_ans[i+1] + " " + SQL_ans[i+2]);
+		Copy_File_Info.push_back(File_Info(SQL_ans[i], SQL_ans[i+1], SQL_ans[i+2]));
+	}
+//=================删除数据库中原文件/文件夹的信息==========================
+	if (Virtual_Path[Virtual_Path.size()-1] == '/')
+		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+	else DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL(DB_Command, SQL_ans) == false)
+		return false;
+//=================删除数据库中原文件/文件夹的信息==========================
+	for (i = 0; i < Copy_File_Info.size(); i ++)
+	{
+		Copy_File_Info[i].Virtual_Path.replace(0, virtual_path_len, Aim_Path);	
+	}
+	DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
+	for (i = 1; i < Copy_File_Info.size(); i ++)
+	{
+		DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
+	}
+	DB_Command += ";";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL(DB_Command, SQL_ans) == false)
+		return false;
+	return true;
+}
+
+
+

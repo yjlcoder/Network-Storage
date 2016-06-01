@@ -8,7 +8,7 @@ int main()
 	int Type_num;
 	string username, password;
 	string userid, virtualpath, md5;
-	string statu;
+	string statu, aimpath;
 //	freopen("output.txt","w",stdout);
 	DB_Operate DB_OPT;
 	while (1)
@@ -25,6 +25,8 @@ int main()
 		cout << "9.查询一个文件的md5" << endl;
 		cout << "10.查询一个目录下的所有文件" << endl;
 		cout << "11.删除一个文件或是一个文件夹" << endl;
+		cout << "12.拷贝一个文件或是一个文件夹" << endl;
+		cout << "13.更新一个文件或是一个文件夹的名称" << endl;
 		cin >> Type_num;
 		if (Type_num == 0)
 		{
@@ -78,22 +80,34 @@ int main()
 		}
 		else if (Type_num == 9)
 		{
-			cout << "请输入用户id和用户虚拟路径" << endl;
+			cout << "请输入用户id和文件虚拟路径" << endl;
 			cin >> userid >> virtualpath;
 			DB_OPT.Query_Md5(userid, virtualpath);
 		}
 		else if (Type_num == 10)
 		{
-			cout << "请输入用户id和用户虚拟路径" << endl;
+			cout << "请输入用户id和文件虚拟路径" << endl;
 //			cout << "Query_File_List" << endl;
 			cin >> userid >> virtualpath;
 			DB_OPT.Query_File_List(userid, virtualpath);
 		}
 		else if (Type_num == 11)
 		{
-			cout << "请输入用户id和用户虚拟路径" << endl;
+			cout << "请输入用户id和文件虚拟路径" << endl;
 			cin >> userid >> virtualpath;
 			DB_OPT.Delete_File_Info(userid, virtualpath);
+		}
+		else if (Type_num == 12)
+		{
+			cout << "请输入用户id和文件虚拟路径和文件目标路径" << endl;
+			cin >> userid >> virtualpath >> aimpath;
+			DB_OPT.Copy_File_Info(userid, virtualpath, aimpath);
+		}
+		else if (Type_num == 13)
+		{
+			cout << "请输入用户id和文件虚拟路径和重命名后文件虚拟路径" << endl;
+			cin >> userid >> virtualpath >> aimpath;
+			DB_OPT.Update_File_Info(userid, virtualpath, aimpath);
 		}
 	}
 //	DB_OPT.Check_User("123","456"); 

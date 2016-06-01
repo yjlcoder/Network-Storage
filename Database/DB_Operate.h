@@ -8,6 +8,8 @@ using namespace std;
 class DB_Operate
 {
 	public:
+		//用于输出到日志或者debug
+		void Debug_Out(string s);
 		//链接数据库 
 		DB_Operate();
 		//输出数据库中的User表
@@ -44,12 +46,12 @@ class DB_Operate
 		//更改文件/文件夹名称：根据用户uid，文件虚拟路径和修改后得文件/文件名，在数据库中修改一条/一系列记录
 		//如果修改后的文件名/文件夹名已经存在，则操作更改失败，返回false
 		//如果修改后的文件名/文件夹名不存在。则操作更改成功，返回true
-//		bool Update_File_Info(string User_Id, string Virtual_Path, string Update_File_Name); 
+		bool Update_File_Info(string User_Id, string Virtual_Path, string Aim_Path); 
 		//复制文件夹或文件，根据用户uid，源文件路径，目标文件路径，复制一系列记录		
 		//如果文件存在，则复制为filename(i)
 		//如果复制失败，则返回false
 		//如果复制成功，则返回true
-//		bool Copy_File_Info(string User_Id, string Virtual_Path, string Aim_Path);
+		bool Copy_File_Info(string User_Id, string Virtual_Path, string Aim_Path);
 	private:
 		MyDB db;
 };
