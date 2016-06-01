@@ -1,4 +1,6 @@
 from app import models
+from . import app
+import os
 class TreeNode:
     def __init__(self, parent=None, sons=None, value=None):
         """
@@ -37,7 +39,7 @@ def buildTree(files, visit):
     the second is MD5 value(file -> MD5, folder -> None)
     """
     if visit is None:
-        return None
+        return []
     if visit[len(visit) - 1] != '/':
         visit = visit + '/'
     visitlen = len(visit.split('/'))
@@ -50,16 +52,16 @@ def buildTree(files, visit):
         except ValueError:
             continue
     if len(inthefolder) <= 0:
-        return None
+        return []
     result = []
     for element in inthefolder:
         path = element.virtualpath.split('/')
         if len(path) == visitlen:
             if element.virtualpath != visit:
                 if (path[len(path)-1], element.md5) not in result:
-                    result.append((path[len(path) - 1], element.md5))
+                    result.append((path[len(path) - 1], element.md5, os.path.getsize(os.path.join(app.config['UPLOADED_FOLDER'], element.md5))))
             continue
         else:
-            if (path[visitlen-1], None) not in result:
-                result.append((path[visitlen - 1], None))
+            if (path[visitlen-1], None, None) not in result:
+                result.append((path[visitlen - 1], None, None))
     return result

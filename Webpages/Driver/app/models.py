@@ -30,7 +30,7 @@ class File(db.Model):
     md5 = db.Column(db.CHAR(32),db.ForeignKey('status.md5'), nullable=True)
 
     def __repr__(self):
-        return "<UserID: %r, Virtual Directory: %r>" %(self.userid, self.virtualDir)
+        return "<UserID: %r, Virtual Directory: %r>" %(self.userid, self.virtualpath)
 
 class Status(db.Model):
     md5 = db.Column(db.CHAR(32), primary_key=True)

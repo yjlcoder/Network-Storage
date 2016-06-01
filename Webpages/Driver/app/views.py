@@ -1,11 +1,13 @@
 from flask.ext.login import login_user, login_required, logout_user, current_user
 from app import app, forms, db, models, login_manager
 from flask import render_template, request, redirect, flash, url_for
+from sqlalchemy import and_
 from app.utils import buildTree
 from werkzeug.utils import secure_filename
 import hashlib
 import os
 import datetime
+from flask import current_app, send_from_directory
 
 
 @app.route("/")
@@ -123,3 +125,43 @@ def upload():
         else:
             flash("文件上传失败")
     return redirect(url_for('index', path=request.args.get('path')))
+
+
+@app.route('/download/<filename>')
+def download(filename):
+    hash = request.args.get('hash')
+    path = os.path.join(current_app.root_path, app.config['UPLOADED_FOLDER'])
+    return send_from_directory(directory=path, filename=hash)
+
+@app.route('/newFolder')
+def newFolder():
+    path = request.args.get('path')
+    name = request.args.get('name')
+    next = request.args.get('next')
+    file = models.File(
+        userid=current_user.id,
+        virtualpath=path+name+'/',
+        md5=None
+    )
+    db.session.add(file)
+    db.session.commit()
+    if next is not None:
+        return redirect(next)
+    else:
+        return url_for(index, path=path+name)
+
+@app.route('/delete')
+def delete():
+    path = request.args.get('path')
+    name = request.args.get('name')
+    if name[len(name)-1] == '/':
+        # Folder
+        files = models.File.query.filter(and_(models.File.userid==current_user.id, models.File.virtualpath.like(path+name+'%'))).all()
+        for file in files:
+            db.session.delete(file)
+        db.session.commit()
+    else:
+        file = models.File.query.filter_by(userid=current_user.id, virtualpath=path+name).first()
+        db.session.delete(file)
+        db.session.commit()
+    return redirect(url_for('index', path=path))
