@@ -152,6 +152,25 @@ def newFolder():
 def delete():
     path = request.args.get('path')
     name = request.args.get('name')
+    if path is None and name is None:
+        wholepath = request.args.get('wholepath')
+        pathsplit = wholepath.split('/')
+        if pathsplit[len(pathsplit)-1] == '':
+            name = pathsplit[len(pathsplit)-2] + "/"
+            path = ""
+            for pathfragile in pathsplit[0:len(pathsplit)-2]:
+                if pathfragile == '':
+                    path = path + '/'
+                else:
+                    path = path + pathfragile + '/'
+        else:
+            name = pathsplit[len(pathsplit)-1]
+            path = ""
+            for pathfragile in pathsplit[0:len(pathsplit)-1]:
+                if pathfragile == '':
+                    path = path + '/'
+                else:
+                    path = path + pathfragile + '/'
     if name[len(name)-1] == '/':
         # Folder
         files = models.File.query.filter(and_(models.File.userid==current_user.id, models.File.virtualpath.like(path+name+'%'))).all()
@@ -218,3 +237,9 @@ def copy():
             return render_template('jump.html', path=url_for('index', path=path))
         else:
             return render_template('jump.html', path=next)
+
+@app.route('/test')
+def test():
+    next=request.args.get('next')
+    flash("next: "+next)
+    return redirect(url_for('index'))
