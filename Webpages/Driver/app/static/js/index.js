@@ -61,3 +61,21 @@ function copyto(src, path){
 function closeiframe(){
     $('#iframediv').remove()
 }
+
+function moveto(src, path){
+    var framediv = $('<div/>',{
+        id: 'iframediv',
+        style: 'position: absolute; top: 50%; left: 50%; width:400px; height: 300px; margin-top: -150px; margin-left: -200px'
+    });
+    var close = "<span class='glyphicon glyphicon-remove'></span><a href='javascript:void(0)' onclick='closeiframe()'>关闭</a>"
+    var frame = $('<iframe/>',{
+        src: '/move?src='+src+"&srcpath="+path,
+        width: '400',
+        height: '300',
+        display: 'block',
+        frameborder: '0'
+    });
+    $('body').append(framediv);
+    framediv.append(close);
+    framediv.append(frame);
+}

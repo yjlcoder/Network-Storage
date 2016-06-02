@@ -201,7 +201,7 @@ def copy():
         return render_template('jump.html', path=url_for('index', path=path))
     elif dest is None:
         files = getFiles(path)
-        return render_template('select.html', path=path, src=src, files=files, srcpath=srcpath)
+        return render_template('select.html', path=path, src=src, files=files, srcpath=srcpath, next=next)
     else:
         try:
             include = dest.index(src) == 0
@@ -238,8 +238,8 @@ def copy():
         else:
             return render_template('jump.html', path=next)
 
-@app.route('/test')
-def test():
-    next=request.args.get('next')
-    flash("next: "+next)
-    return redirect(url_for('index'))
+@app.route('/move')
+def move():
+    src=request.args.get('src')
+    srcpath = request.args.get('srcpath')
+    return redirect(url_for('copy', src=src, srcpath=srcpath, next=url_for('delete', wholepath=src)))

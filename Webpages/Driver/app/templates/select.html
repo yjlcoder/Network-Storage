@@ -19,13 +19,13 @@
 
         <table class="table table-responsive table-hover">
         <tr>
-            <td><a href="{{ url_for('copy', src=src, dest='/', srcpath=srcpath) }}">选择根目录</a></td>
+            <td><a href="{{ url_for('copy', src=src, dest='/', srcpath=srcpath, next=next) }}">选择根目录</a></td>
         </tr>
         {% for file in files %}
             {% if file[1] is none %}
                 <tr>
-                    <td><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;&nbsp;<a href="{{ url_for('copy', src=src, path=path+file[0]+'/') }}">{{ file[0] }}</a></td>
-                    <td><a href="{{ url_for('copy', src=src, dest=path+file[0]+'/', srcpath=srcpath) }}">选定</a></td>
+                    <td><span class="glyphicon glyphicon-folder-open"></span>&nbsp;&nbsp;&nbsp;<a href="{{ url_for('copy', src=src, path=path+file[0]+'/', next=next) }}">{{ file[0] }}</a></td>
+                    <td><a href="{{ url_for('copy', src=src, dest=path+file[0]+'/', srcpath=srcpath, next=next) }}">选定</a></td>
                 </tr>
             {% endif %}
         {% endfor %}
