@@ -122,25 +122,28 @@
                         {% endif %}
                         </td>
                         <td>
+                            <div class="btn-group" role="group">
                             <!-- Delete -->
                             {% if file[1] is not none %}{# FILE #}
-                            <a href="{{ url_for('delete', path=path, name=file[0]) }}" style="color: black"><span class="glyphicon glyphicon-remove"></span></a>
+                                <button type="button" class="btn btn-default" onclick="window.location='{{ url_for('delete', path=path, name=file[0]) }}'"><span class="glyphicon glyphicon-remove"></span>&nbsp;&nbsp;删除</button>
                             {% else %}{# FOLDER  #}
-                            <a href="{{ url_for('delete', path=path, name=file[0]+'/') }}" style="color: black"><span class="glyphicon glyphicon-remove"></span></a>
+                                <button type="button" class="btn btn-default" onclick="window.location='{{ url_for('delete', path=path, name=file[0] +'/') }}'"><span class="glyphicon glyphicon-remove"></span>&nbsp;&nbsp;删除</button>
                             {% endif %}
 
                             <!-- Copy -->
                             {% if file[1] is not none %}{# FILE #}
-                            <a href="javascript:void(0)" style="color: black" onclick="copyto('{{path + file[0] }}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span></a>
+                                <button type="button" class="btn btn-default" onclick="copyto('{{path + file[0] }}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span>&nbsp;&nbsp;复制</button>
                             {% else %}{# FOLDER  #}
-                            <a href="javascript:void(0)" style="color: black" onclick="copyto('{{path + file[0] + '/'}}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span></a>
+                                <button type="button" class="btn btn-default" onclick="copyto('{{path + file[0] + '/'}}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span>&nbsp;&nbsp;复制</button>
                             {% endif %}
 
+                            <!-- Move -->
                             {% if file[1] is not none %}{# FILE #}
-                                <a href="javascript:void(0)" style="color:black" onclick="moveto('{{ path+file[0] }}','{{ path }}')"><span class="glyphicon glyphicon-move"></span></a>
+                                <button type="button" class="btn btn-default" onclick="moveto('{{path + file[0]}}','{{ path }}')"><span class="glyphicon glyphicon-move"></span>&nbsp;&nbsp;移动</button>
                             {% else %}{# FOLDER #}
-                                <a href="javascript:void(0)" style="color:black" onclick="moveto('{{ path+file[0]+'/' }}','{{ path }}')"><span class="glyphicon glyphicon-move"></span></a>
+                                <button type="button" class="btn btn-default" onclick="moveto('{{path + file[0] + '/' }}','{{ path }}')"><span class="glyphicon glyphicon-move"></span>&nbsp;&nbsp;移动</button>
                             {% endif %}
+                            </div>
                         </td>
                         <td>
                             {% if file[1] is not none %}
