@@ -1,6 +1,7 @@
 from app import models
 from . import app
 import os
+from flask.ext.login import current_user
 class TreeNode:
     def __init__(self, parent=None, sons=None, value=None):
         """
@@ -65,3 +66,10 @@ def buildTree(files, visit):
             if (path[visitlen-1], None, None) not in result:
                 result.append((path[visitlen - 1], None, None))
     return result
+
+def getFiles(path):
+    files = models.File.query.filter_by(userid=current_user.id).all()
+    files = buildTree(files=files, visit=path)
+    if files is not None:
+        files.sort(key=lambda x: x[0])
+    return files;

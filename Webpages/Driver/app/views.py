@@ -2,12 +2,11 @@ from flask.ext.login import login_user, login_required, logout_user, current_use
 from app import app, forms, db, models, login_manager
 from flask import render_template, request, redirect, flash, url_for
 from sqlalchemy import and_
-from app.utils import buildTree
+from app.utils import buildTree, getFiles
 from werkzeug.utils import secure_filename
-import hashlib
-import os
-import datetime
+import hashlib, os, datetime
 from flask import current_app, send_from_directory
+from copy import deepcopy
 
 
 @app.route("/")
@@ -18,10 +17,7 @@ def index():
     if path is None or path == "":
         path = '/'
         return redirect(url_for('index', path=path))
-    files = models.File.query.filter_by(userid=current_user.id).all()
-    files = buildTree(files=files, visit=path)
-    if files is not None:
-        files.sort(key=lambda x: x[0])
+    files = getFiles(path)
     return render_template("index.html", path=path, files=files)
 
 
@@ -133,6 +129,7 @@ def download(filename):
     path = os.path.join(current_app.root_path, app.config['UPLOADED_FOLDER'])
     return send_from_directory(directory=path, filename=hash)
 
+
 @app.route('/newFolder')
 def newFolder():
     path = request.args.get('path')
@@ -150,6 +147,7 @@ def newFolder():
     else:
         return url_for(index, path=path+name)
 
+
 @app.route('/delete')
 def delete():
     path = request.args.get('path')
@@ -165,3 +163,58 @@ def delete():
         db.session.delete(file)
         db.session.commit()
     return redirect(url_for('index', path=path))
+
+@app.route('/copy')
+def copy():
+    src = request.args.get('src')
+    dest = request.args.get('dest')
+    path = request.args.get('path')
+    srcpath = request.args.get('srcpath')
+    next = request.args.get('next')
+    if path is None:
+        path = '/'
+    if srcpath is None:
+        srcpath = '/'
+    if path[len(path)-1] != '/':
+        path = path + '/'
+    if src is None:
+        flash("错误: 不合法的参数")
+        return render_template('jump.html', path=url_for('index', path=path))
+    elif dest is None:
+        files = getFiles(path)
+        return render_template('select.html', path=path, src=src, files=files, srcpath=srcpath)
+    else:
+        try:
+            include = dest.index(src) == 0
+        except:
+            include = False
+        if include:
+            flash("复制失败：目录有包含关系")
+            return render_template('jump.html', path=url_for('index', path=path))
+        files = getFiles(dest)
+        name = src.split('/')
+        if name[len(name)-1] == '':
+            # Folder
+            name = (name[len(name)-2], 'Folder')
+        else:
+            # File
+            name = (name[len(name)-1], 'File')
+        for file in files:
+            if file[0] == name[0] and ((name[1] == 'Folder' and file[1] is None) or (name[1] == 'File' and file[2] is not None)):
+                flash("目的文件夹内有相同文件或目录")
+                return render_template('jump.html', path=url_for('index', path=path))
+        if name[1] == 'File':
+            srcFile = models.File.query.filter_by(userid=current_user.id, virtualpath=src).first()
+            destFile = models.File(userid=current_user.id, virtualpath=dest+name[0], md5=srcFile.md5 )
+            db.session.add(destFile)
+            db.session.commit()
+        elif name[1] == 'Folder':
+            srcFiles = models.File.query.filter(and_(models.File.userid==current_user.id, models.File.virtualpath.like(src+'%'))).all()
+            for srcFile in srcFiles:
+                destFile = models.File(userid=current_user.id, virtualpath=srcFile.virtualpath.replace(srcpath, dest, 1), md5=srcFile.md5)
+                db.session.add(destFile)
+            db.session.commit()
+        if next is None:
+            return render_template('jump.html', path=url_for('index', path=path))
+        else:
+            return render_template('jump.html', path=next)

@@ -124,9 +124,16 @@
                         <td>
                             <!-- Delete -->
                             {% if file[1] is not none %}{# FILE #}
-                            <a href="{{ url_for('delete', path=path, name=file[0]) }}"><span class="glyphicon glyphicon-remove"></span></a>
+                            <a href="{{ url_for('delete', path=path, name=file[0]) }}" style="color: black"><span class="glyphicon glyphicon-remove"></span></a>
                             {% else %}{# FOLDER  #}
-                            <a href="{{ url_for('delete', path=path, name=file[0]+'/') }}"><span class="glyphicon glyphicon-remove"></span></a>
+                            <a href="{{ url_for('delete', path=path, name=file[0]+'/') }}" style="color: black"><span class="glyphicon glyphicon-remove"></span></a>
+                            {% endif %}
+
+                            <!-- Copy -->
+                            {% if file[1] is not none %}{# FILE #}
+                            <a href="javascript:void(0)" style="color: black" onclick="copyto('{{path + file[0] }}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span></a>
+                            {% else %}{# FOLDER  #}
+                            <a href="javascript:void(0)" style="color: black" onclick="copyto('{{path + file[0] + '/'}}','{{ path }}')"><span class="glyphicon glyphicon-copy"></span></a>
                             {% endif %}
                         </td>
                         <td>
