@@ -1,3 +1,5 @@
+#ifndef __DBInfo_H__
+#define __DBInfo_H__
 #include <iostream>
 #include <string>
 using namespace std;
@@ -30,3 +32,4 @@ class Status_Info
 		Status_Info(string Init_Md5, string Init_Status);
 		~Status_Info();
 };
+#endif
