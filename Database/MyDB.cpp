@@ -42,6 +42,7 @@ bool MyDB::initDB(string host, string user, string pwd, string db_name)
 	// 成功返回MYSQL*连接句柄，失败返回NULL
 	connection = mysql_real_connect(connection, host.c_str(),
 			user.c_str(), pwd.c_str(), db_name.c_str(), 0, NULL, 0);
+	mysql_set_character_set(connection, "gbk");
 	if(connection == NULL)
 	{
 		cout << "Error:" << mysql_error(connection);

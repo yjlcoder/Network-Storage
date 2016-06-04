@@ -32,7 +32,7 @@ def login():
         if user is None:
             flash("不存在该用户名")
             return redirect('login')
-        if user.password != hashlib.sha1(form.password.data.encode('utf-8')).hexdigest():
+        if user.password != hashlib.sha1(form.password.data.encode('gbk')).hexdigest():
             flash("登录失败, 密码错误")
             return redirect('login')
         login_user(user, remember=form.remember_me.data)
@@ -54,7 +54,7 @@ def register():
         if(find):
             flash("该用户名已经被注册")
             return redirect('register')
-        user = models.User(username=form.username.data, password=hashlib.sha1(form.password.data.encode('utf-8')).hexdigest())
+        user = models.User(username=form.username.data, password=hashlib.sha1(form.password.data.encode('gbk')).hexdigest())
         file = models.File(virtualpath='/', uploader=user)
         db.session.add(user)
         db.session.commit()
@@ -89,7 +89,10 @@ def upload():
     md5 = request.form['md5']
     saveto = request.form['saveto']
     name = request.form['name']
-    path = os.path.join(app.config['UPLOADED_FOLDER'], md5)
+    path = os.path.join(app.config['UPLOADED_FOLDER'], md5[0:2])
+    if not os.path.exists(path):
+        os.makedirs(path)
+    path = os.path.join(path, md5)
     files = getFiles(saveto)
     for file in files:
         if file[0] == name and file[1] is not None:
@@ -131,7 +134,7 @@ def upload():
 @app.route('/download/<filename>')
 def download(filename):
     hash = request.args.get('hash')
-    path = os.path.join(current_app.root_path, app.config['UPLOADED_FOLDER'])
+    path = os.path.join(current_app.root_path, app.config['UPLOADED_FOLDER'], hash[0:2])
     return send_from_directory(directory=path, filename=hash)
 
 
@@ -140,6 +143,10 @@ def newFolder():
     path = request.args.get('path')
     name = request.args.get('name')
     next = request.args.get('next')
+    exist = models.File.query.filter_by(userid=current_user.id, virtualpath=path+name+'/').first()
+    if exist is not None:
+        flash("Folder has exists")
+        return redirect(url_for('index', path=path))
     file = models.File(
         userid=current_user.id,
         virtualpath=path+name+'/',
@@ -150,7 +157,7 @@ def newFolder():
     if next is not None:
         return redirect(next)
     else:
-        return url_for(index, path=path+name)
+        return redirect(url_for('index', path=path+name))
 
 
 @app.route('/delete')

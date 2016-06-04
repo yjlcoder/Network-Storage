@@ -177,11 +177,14 @@ vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 //	cout << Virtual_Path << endl;
 	if (Virtual_Path[Virtual_Path.size()-1] != '/')
 		return ans;
-	DB_Command = "SELECT virtualpath FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+	DB_Command = "SELECT virtualpath FROM file WHERE userid = " + User_Id + " AND virtualpath like \"" + Virtual_Path + "%\"";
 	cout << DB_Command << endl;
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
+//	cout << "size = " << SQL_ans.size() << endl;
+//	for (int i = 0; i < SQL_ans.size(); i ++)
+//		cout << SQL_ans[i] << endl;
 	ans = Find_File_List(SQL_ans, Virtual_Path);
 //	cout << "得到文件目录" << endl;
 	Debug_Out("得到文件目录");
@@ -326,7 +329,7 @@ bool DB_Operate::Delete_File_Info(string User_Id, string Virtual_Path)
 	ss << Virtual_Path.size();
 	ss >> len;
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
-		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath like \"" + Virtual_Path + "%\"";
 	else DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
@@ -362,7 +365,7 @@ bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_
 	ss << Virtual_Path.size();
 	ss >> len;
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
-		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath like \"" + Virtual_Path + "%\"";
 	else DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
@@ -421,7 +424,7 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 	ss << Virtual_Path.size();
 	ss >> len;
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
-		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+		DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath like \"" + Virtual_Path + "%\"";
 	else DB_Command = "SELECT * FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
@@ -460,7 +463,7 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 		return false;
 //=================删除数据库中原文件/文件夹的信息==========================
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
-		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
+		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath like \"" + Virtual_Path + "%\"";
 	else DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
 	Debug_Out(DB_Command);
 	SQL_ans.clear();

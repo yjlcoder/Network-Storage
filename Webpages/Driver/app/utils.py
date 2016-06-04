@@ -60,7 +60,7 @@ def buildTree(files, visit):
         if len(path) == visitlen:
             if element.virtualpath != visit:
                 if (path[len(path)-1], element.md5) not in result:
-                    result.append((path[len(path) - 1], element.md5, os.path.getsize(os.path.join(app.config['UPLOADED_FOLDER'], element.md5))))
+                    result.append((path[len(path) - 1], element.md5, os.path.getsize(os.path.join(app.config['UPLOADED_FOLDER'], element.md5[0:2], element.md5))))
             continue
         else:
             if (path[visitlen-1], None, None) not in result:

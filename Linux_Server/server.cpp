@@ -174,7 +174,7 @@ int regist(int sockfd){
 	unsigned char sha1[40];
 	char passwordS[41];
 	cout << password << endl;
-	SHA((unsigned char *) password, L, sha1);
+	SHA1((unsigned char *) password, L, sha1);
 	
 	for (int i = 0; i < 20; ++i) {
 		sprintf(passwordS + 2*i, "%02x", (int)sha1[i]);
@@ -201,7 +201,7 @@ int logIn(int sockfd){
 	unsigned char sha1[40];
 	char passwordS[41];
 	cout << password << endl;
-	SHA((unsigned char *) password, L, sha1);
+	SHA1((unsigned char *) password, L, sha1);
 	for (int i = 0; i < 20; ++i) {
 		sprintf(passwordS + 2*i, "%02x", (int)sha1[i]);
 	}
@@ -233,8 +233,10 @@ int getFileList(int sockfd){
 	vector<string> fileList = DB.Query_File_List(UIDS, path);
 	
 	unsigned int num = 0;//htonl(fileList.size());
+	cout << "size : " << fileList.size() << endl;
 	for (int i = 0; i < fileList.size(); ++i) {
 		string msg = path + fileList[i];
+cout << msg << endl;
 		num += strlen(msg.c_str()) + 4;
 	}
 	num = htonl(num);
