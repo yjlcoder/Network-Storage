@@ -113,24 +113,26 @@ int writeLog(const char * message){
 string md5S(const unsigned char * md5){
 	char res[33];
 	for (int i = 0; i < 16; ++i) {
-		sprintf(res + (i*2), "%x", md5[i]);
+		sprintf(res + (i*2), "%02x", md5[i]);
 	}
 	return res;
 }
 
 int getSmallStr(int sockfd, char * buff){
-	long L;
+	int L;
 	unsigned char Len = 0;
 	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
+	cout << Len << endl;
 	if (L != sizeof(Len)) return -1;
 	L = recv(sockfd, buff, Len, MSG_WAITALL);
+	cout << buff << endl;
 	if (L != Len) return -1;
 	buff[Len] = '\0';
 	return Len;
 }
 
 int getStr(int sockfd, char * buff){
-	long L;
+	int L;
 	int Len = 0;
 	cout << __LINE__ << ' ' << sizeof(Len) << endl;
 	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
@@ -152,8 +154,11 @@ int getStr(int sockfd, char * buff){
 
 int sendStr(int sockfd, const int Len, const char * buff){
 	int nLen = htonl(Len);
-	if (send(sockfd, &nLen, sizeof(nLen), 0) != 4) return -1;
-	if (send(sockfd, buff, Len, 0) != Len) return -1;
+	char sendBuff[1024];
+	memcpy(sendBuff, &nLen, sizeof(nLen));
+	memcpy(sendBuff + sizeof(nLen), buff, Len);
+	int L = Len + sizeof(nLen);
+	if (send(sockfd, sendBuff, L, 0) != L) return -1;
 	return 0;
 }
 
@@ -168,15 +173,21 @@ int regist(int sockfd){
 	char flag;
 	unsigned char sha1[40];
 	char passwordS[41];
+	cout << password << endl;
 	SHA((unsigned char *) password, L, sha1);
 	
 	for (int i = 0; i < 20; ++i) {
-		sprintf(passwordS + 2*i, "%x", (int)sha1[i]);
+		sprintf(passwordS + 2*i, "%02x", (int)sha1[i]);
 	}
 
 	flag = DB.Insert_User(name, passwordS);
 	flag = flag ? 0x00 : -1;
 	if (send(sockfd, &flag, sizeof(flag), 0) != sizeof(flag)) return -1;
+	
+	int UID = DB.Check_User(name, passwordS);
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	DB.Insert_File_Info(UIDS, "/");
 	return 0;
 }
 
@@ -189,12 +200,13 @@ int logIn(int sockfd){
 
 	unsigned char sha1[40];
 	char passwordS[41];
+	cout << password << endl;
 	SHA((unsigned char *) password, L, sha1);
 	for (int i = 0; i < 20; ++i) {
-		sprintf(passwordS + 2*i, "%x", (int)sha1[i]);
+		sprintf(passwordS + 2*i, "%02x", (int)sha1[i]);
 	}
 
-	long UID;
+	int UID;
 	UID = DB.Check_User(name, passwordS);
 	if (UID == -1) UID == 0;
 
@@ -220,10 +232,13 @@ int getFileList(int sockfd){
 	sprintf(UIDS, "%d", UID);
 	vector<string> fileList = DB.Query_File_List(UIDS, path);
 	
-	unsigned int num = htonl(fileList.size());
+	unsigned int num = 0;//htonl(fileList.size());
+	for (int i = 0; i < fileList.size(); ++i) {
+		num += fileList[i].length() + 4;
+	}
+	num = htonl(num);
 	L = send(sockfd, &num, sizeof(num), 0);
 	if (L != sizeof(num)) return FAILURE;
-
 
 	for (int i = 0; i < fileList.size(); ++i) {
 		string msg = path + fileList[i];
@@ -238,7 +253,7 @@ int fileExist(int sockfd, const int UID, const char * fileName, const unsigned c
 	DB_Operate DB;
 
 	for (int i = 0; i < 16; ++i) {
-		sprintf(md5_32 + i * 2, "%x", md5_str[i]);
+		sprintf(md5_32 + i * 2, "%02x", md5_str[i]);
 	}
 
 	char UIDS[13];
@@ -262,23 +277,29 @@ int createConfig(const unsigned char * md5_str, const long long fileSize){
 	sprintf(cmd, "mkdir upload");
 	system(cmd);
 
-	sprintf(cmd, "mkdir upload/%x", md5_str[0]);
+	sprintf(cmd, "mkdir upload/%02x", md5_str[0]);
 	system(cmd);
 
-	sprintf(md5_file, "upload/%x/", md5_str[0]);
+	sprintf(md5_file, "upload/%02x/", md5_str[0]);
 	for (int i  = 0; i < 16; ++i) {
 		int l = strlen(md5_file);
-		sprintf(md5_file + l, "%x", md5_str[i]);
+		sprintf(md5_file + l, "%02x", md5_str[i]);
 	}
 	int l = strlen(md5_file);
 	sprintf(cmd, "mkdir %s", md5_file);
 	system(cmd);
 
-	sprintf(cmd, "upload/%x/%s/cfg", md5_str[0], md5S(md5_str).c_str());
+	sprintf(cmd, "upload/%02x/%s/cfg", md5_str[0], md5S(md5_str).c_str());
 	P(semCreateFile);
 	
 	if (access(cmd, 0) == -1) {
+		cout << cmd << endl;
 		ofstream file(cmd, ios::binary);
+		if (file.is_open()) {
+			cout << "file ok" << endl;
+		} else {
+			cout << "file error" << endl;
+		}
 		int blockNum = (fileSize - 1) / (1024*1024) + 1;
 		cout << blockNum << endl;
 		char flag = 0;
@@ -286,7 +307,9 @@ int createConfig(const unsigned char * md5_str, const long long fileSize){
 			file.write(&flag, 1);
 		
 		DB_Operate DB;
+		cout << md5S(md5_str) << endl;
 		DB.Insert_Md5_Statu(md5S(md5_str), "2");
+		file.close();
 	}
 	V(semCreateFile);
 	return 0;
@@ -303,27 +326,27 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 	char path[1024];
 
 	for (int i = 0; i < 16; ++i) {
-		sprintf(md5_32 + i*2, "%x", md5_str[i]);
+		sprintf(md5_32 + i*2, "%02x", md5_str[i]);
 	}
-	sprintf(path, "upload/%x/%s/%d", md5_str[0], md5_32, blockNum);
+	sprintf(path, "upload/%02x/%s/%d", md5_str[0], md5_32, blockNum);
 
-	cout << __LINE__ << endl;
+	//cout << __LINE__ << endl;
 	L = recv(sockfd, &size, sizeof(size), MSG_WAITALL);
 	if (L != sizeof(size)) return -1;
-	cout << size << endl;
+	//cout << size << endl;
 	size = ntohl(size);
-	cout << size << endl;
+	//cout << size << endl;
 	MD5_CTX c;
 	MD5_Init(&c);
 	ofstream file(path);
 	while (size > 0) {
-		cout << size << endl;
+		//cout << size << endl;
 		int s = min(size, 1024);
 		size -= s;
 		L = recv(sockfd, buff, s, MSG_WAITALL);
 		buff[L] = 0;
-		puts(buff);
-		cout << L << endl;
+		//puts(buff);
+		//cout << L << endl;
 		if (L != s) return -1;
 		MD5_Update(&c, buff, L);
 		file.write(buff, L);
@@ -333,7 +356,7 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 	if (L != 16) return -1;
 	MD5_Final(md5_chk,&c);
 	for (int i = 0; i < 16; ++i) {
-		cout << (int)md5_chk[i] << ' ' << (int)md5[i] << endl;
+		//cout << (int)md5_chk[i] << ' ' << (int)md5[i] << endl;
 		if (md5_chk[i] != md5[i]) return -1;
 	}
 	return 0;
@@ -345,28 +368,28 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 	sprintf(cmd, "mkdir file");
 	system(cmd);
 
-	sprintf(cmd, "mkdir file/%x", md5_str[0]);
+	sprintf(cmd, "mkdir file/%02x", md5_str[0]);
 	system(cmd);
 
 	char compPath[1024];
 	char md5_32[33];
 	for (int i = 0; i < 16; ++i) {
-		sprintf(md5_32 + i*2, "%x", md5_str[i]);
+		sprintf(md5_32 + i*2, "%02x", md5_str[i]);
 	}
-	sprintf(compPath, "file/%x/%s", md5_str[0], md5_32);
+	sprintf(compPath, "file/%02x/%s", md5_str[0], md5_32);
 
 	P(semFileMerge);
 	if (access(compPath, 0) == -1) {
 		ofstream compF(compPath, ios::binary);
 		for (int i = 0; i < fileL; ++i) {
 			char sourPath[1024];
-			sprintf(sourPath, "upload/%x/%s/%d", md5_str[0], md5_32, i);
+			sprintf(sourPath, "upload/%02x/%s/%d", md5_str[0], md5_32, i);
 			ifstream sourF(sourPath, ios::binary);
 			compF << sourF.rdbuf();
 		}
 	}
 
-	sprintf(cmd, "rm -rf upload/%x/%s", md5_str[0], md5_32);
+	sprintf(cmd, "rm -rf upload/%02x/%s", md5_str[0], md5_32);
 	system(cmd);
 	V(semFileMerge);
 
@@ -381,10 +404,10 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 int semFileOp = sem_init(FILEOPKEY, 1);
 int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, const long long fileSize){
 	char cfg_file[1024];
-	sprintf(cfg_file, "upload/%x/", md5_str[0]);
+	sprintf(cfg_file, "upload/%02x/", md5_str[0]);
 	for (int i  = 0; i < 16; ++i) {
 		int l = strlen(cfg_file);
-		sprintf(cfg_file + l, "%x", md5_str[i]);
+		sprintf(cfg_file + l, "%02x", md5_str[i]);
 	}
 	int l = strlen(cfg_file);
 	sprintf(cfg_file + l, "/cfg");
@@ -401,21 +424,21 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	char overmark = 1;
 	int blockNum = -1;
 	int overNum = 0;
-
+	file.seekg(0, ios::beg);
 	cout << cfg_file << endl;
 	for (int i = 0; i < fileL; ++i) {
 		file.read(&flag, 1);
-		cout << "i : " << i << endl;
+		//cout << "i : " << i << ' ' << (int)flag << endl;
 		if (flag != -1) overmark = 0;
 		if (flag == 0 && blockNum == -1) {
-			cout << (int)flag << endl;
+			//cout << (int)flag << endl;
 			blockNum = i;
 			file.seekg(i, ios::beg);
 			flag = 1;
-			cout << (int)flag << endl;
+			//cout << (int)flag << endl;
 			file.write(&flag, 1);
+			break;
 		}
-		if (flag == -1) ++overNum;
 	}
 	file.close();
 	V(semFileOp);
@@ -425,15 +448,19 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	} else if (overmark == 0 && blockNum == -1){
 		blockNum = -2;
 	}
-	cout << blockNum << endl;
-	blockNum = htonl(blockNum);
-	send(sockfd, &blockNum, sizeof(blockNum), 0);
-	if (overmark == 1 || blockNum == -1) return 0;
+	cout << "blockNum : " << blockNum << endl;
+	int tblockNum = htonl(blockNum);
+	send(sockfd, &tblockNum, sizeof(tblockNum), 0);
+	if (overmark == 1 || blockNum == -1) {
+		if (overmark == 1) mergeFile(md5_str, fileL, fileSize);
+		return 0;
+	}
 
 	cout << "recv" << blockNum << endl;
 	if (blockNum != -1) flag = recvFile(sockfd, md5_str, blockNum);
 	cout << __FILE__ << __LINE__ << endl;
-	if (flag == -1) return -1;
+	
+	//if (flag == -1) return -1;
 	cout << "xxx" << endl;
 
 	P(semFileOp);
@@ -452,13 +479,14 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	overNum = 0;
 	for (int i = 0; i < fileL; ++i) {
 		file_.read(&flag, 1);
-		cout << (int)flag << endl;
+		//cout << (int)flag << endl;
 		if (flag == -1) ++overNum;
 	}
 	file_.close();
 	V(semFileOp);
+	//if (flag == -1) return -1;
+
 	cout << overNum << ' ' << flag << ' ' << fileL << endl;
-	
 	if (overNum == fileL) mergeFile(md5_str, fileL, fileSize);
 
 	overNum = htonl(overNum);
@@ -607,7 +635,6 @@ int downLoad(int sockfd){
 	UID = ntohl(UID);
 
 	if (getStr(sockfd, path) == -1) return -1;
-
 	char flag;
 	char UIDS[20];
 	sprintf(UIDS, "%d", UID);
@@ -661,14 +688,15 @@ int downLoad(int sockfd){
 		int tsize = htonl(size);
 		L = send(sockfd, &tsize, sizeof(tsize), 0);
 		if (L != sizeof(tsize)) return -1;
-
+		
+		cout << path << endl;
 		cout << offset << ' ' << size << ' ' << tsize << endl;
 		char buff[2048];
 		while (size > 0) {
 			int l = min(1024, size);
-			cout << l << endl;
+			//cout << l << endl;
 			size -= l;
-			cout << size << endl;
+			//cout << size << endl;
 			file.read(buff, l);
 			MD5_Update(&c, buff, l);
 			L = send(sockfd, buff, l, 0);
@@ -723,6 +751,7 @@ int exec(int sockfd){
 }
 
 void createServer(int portNumber){
+	signal(SIGCHLD, SIG_IGN);
     struct timeval timeout;
     timeout.tv_sec = 3;                
     timeout.tv_usec = 0;
@@ -769,7 +798,10 @@ void createServer(int portNumber){
 		}
 		int pid = fork();
 		if (pid == 0) {
-			exit(exec(sockCli));
+			int flag = exec(sockCli);
+			if (flag == -1) 
+				send(sockCli, &flag, 4, 0);
+			exit(flag);
 		} else {
 			close(sockCli);
 		}
@@ -780,5 +812,4 @@ void createServer(int portNumber){
 int main(){
 	createServer(8192);
 }
-
 
