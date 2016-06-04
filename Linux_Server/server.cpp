@@ -366,10 +366,10 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 int mergeFile(const unsigned char * md5_str, const int fileL, const long long fileSize){
 	char cmd[1024];
 	char md5_file[1024];
-	sprintf(cmd, "mkdir /root/files");
+	sprintf(cmd, "mkdir /files");
 	system(cmd);
 
-	sprintf(cmd, "mkdir /root/files/%02x", md5_str[0]);
+	sprintf(cmd, "mkdir /files/%02x", md5_str[0]);
 	system(cmd);
 
 	char compPath[1024];
@@ -377,7 +377,7 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 	for (int i = 0; i < 16; ++i) {
 		sprintf(md5_32 + i*2, "%02x", md5_str[i]);
 	}
-	sprintf(compPath, "/root/files/%02x/%s", md5_str[0], md5_32);
+	sprintf(compPath, "/files/%02x/%s", md5_str[0], md5_32);
 
 	P(semFileMerge);
 	if (access(compPath, 0) == -1) {
@@ -654,7 +654,7 @@ int downLoad(int sockfd){
 	char md5_32[33], compPath[PATHSIZE];
 	cout << MD5 << endl;
 	sprintf(md5_32, "%s", MD5.c_str());
-	sprintf(compPath, "/root/files/%c%c/%s", md5_32[0], md5_32[1], md5_32);
+	sprintf(compPath, "/files/%c%c/%s", md5_32[0], md5_32[1], md5_32);
 	cout << compPath << endl;
 	ifstream file(compPath, ios::binary);
 
