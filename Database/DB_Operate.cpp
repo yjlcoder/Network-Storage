@@ -17,10 +17,11 @@ DB_Operate::DB_Operate()
 
 bool DB_Operate::Show_User()
 {
+	Debug_Out("Show_User");
 	int i, j;
 	vector<string> SQL_ans;
 	SQL_ans.clear();
-	db.exeSQL_SELECT("select * from user order by userid", SQL_ans);
+	db.exeSQL_SELECT("select * from user order by id", SQL_ans);
 	for (i = 0; i < SQL_ans.size(); i += 3)
 	{
 		Debug_Out(SQL_ans[i]+" "+SQL_ans[i+1]+" "+SQL_ans[i+2]);
@@ -382,10 +383,16 @@ bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_
 	{
 		Copy_File_Info[i].Virtual_Path.replace(0, virtual_path_len, Aim_Path);	
 	}
-	DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
+	if (Copy_File_Info[0].Md5 != "NULL")
+		DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
+	else
+		DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", " + Copy_File_Info[0].Md5 + ")";
 	for (i = 1; i < Copy_File_Info.size(); i ++)
 	{
-		DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
+		if (Copy_File_Info[i].Md5 != "NULL")
+			DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
+		else
+			DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", " + Copy_File_Info[i].Md5 + ")";
 	}
 	DB_Command += ";";
 	Debug_Out(DB_Command);
@@ -431,6 +438,26 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 		Debug_Out(SQL_ans[i] + " " + SQL_ans[i+1] + " " + SQL_ans[i+2]);
 		Copy_File_Info.push_back(File_Info(SQL_ans[i], SQL_ans[i+1], SQL_ans[i+2]));
 	}
+	for (i = 0; i < Copy_File_Info.size(); i ++)
+	{
+		Copy_File_Info[i].Virtual_Path.replace(0, virtual_path_len, Aim_Path);	
+	}
+	if (Copy_File_Info[0].Md5 != "NULL")
+		DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
+	else
+		DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", " + Copy_File_Info[0].Md5 + ")";
+	for (i = 1; i < Copy_File_Info.size(); i ++)
+	{
+		if (Copy_File_Info[i].Md5 != "NULL")
+			DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
+		else
+			DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", " + Copy_File_Info[i].Md5 + ")";
+	}
+	DB_Command += ";";
+	Debug_Out(DB_Command);
+	SQL_ans.clear();
+	if (db.exeSQL(DB_Command, SQL_ans) == false)
+		return false;
 //=================删除数据库中原文件/文件夹的信息==========================
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
 		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
@@ -440,20 +467,6 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 	if (db.exeSQL(DB_Command, SQL_ans) == false)
 		return false;
 //=================删除数据库中原文件/文件夹的信息==========================
-	for (i = 0; i < Copy_File_Info.size(); i ++)
-	{
-		Copy_File_Info[i].Virtual_Path.replace(0, virtual_path_len, Aim_Path);	
-	}
-	DB_Command = "INSERT INTO file(userid, virtualpath, md5) Values(" + Copy_File_Info[0].User_Id + ", \"" + Copy_File_Info[0].Virtual_Path + "\", \"" + Copy_File_Info[0].Md5 + "\")";
-	for (i = 1; i < Copy_File_Info.size(); i ++)
-	{
-		DB_Command += ",(" + Copy_File_Info[i].User_Id + ", \"" + Copy_File_Info[i].Virtual_Path + "\", \"" + Copy_File_Info[i].Md5 + "\")";
-	}
-	DB_Command += ";";
-	Debug_Out(DB_Command);
-	SQL_ans.clear();
-	if (db.exeSQL(DB_Command, SQL_ans) == false)
-		return false;
 	return true;
 }
 
