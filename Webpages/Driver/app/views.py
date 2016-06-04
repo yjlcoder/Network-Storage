@@ -1,6 +1,6 @@
 from flask.ext.login import login_user, login_required, logout_user, current_user
 from app import app, forms, db, models, login_manager
-from flask import render_template, request, redirect, flash, url_for
+from flask import render_template, request, redirect, flash, url_for, jsonify
 from sqlalchemy import and_
 from app.utils import buildTree, getFiles
 from werkzeug.utils import secure_filename
@@ -90,6 +90,11 @@ def upload():
     saveto = request.form['saveto']
     name = request.form['name']
     path = os.path.join(app.config['UPLOADED_FOLDER'], md5)
+    files = getFiles(saveto)
+    for file in files:
+        if file[0] == name and file[1] is not None:
+            flash("文件已存在")
+            return redirect("index")
     if os.path.isfile(path):
         flash("秒传成功")
         file = models.File(
@@ -243,3 +248,14 @@ def move():
     src=request.args.get('src')
     srcpath = request.args.get('srcpath')
     return redirect(url_for('copy', src=src, srcpath=srcpath, next=url_for('delete', wholepath=src)))
+
+@app.route('/ajax')
+def ajax():
+    type = request.args.get('type')
+    if type == 'md5':
+        md5 = request.args.get('md5')
+        status = models.Status.query.filter_by(md5=md5).first()
+        ret = False
+        if status is not None and status.status == 1:
+            ret = True
+        return jsonify(status=ret)

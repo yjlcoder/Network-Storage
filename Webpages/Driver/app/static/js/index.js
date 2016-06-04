@@ -23,9 +23,20 @@ function calculateMD5(){
         if(file.size != e.target.result.byteLength){
             alert("Error: Browser reported success but could not read the file until the end.")
         } else {
-            $('#upload_md5').val((SparkMD5.ArrayBuffer.hash(e.target.result)));
+            var md5 = SparkMD5.ArrayBuffer.hash(e.target.result);
+            $('#upload_md5').val(md5);
+            $.getJSON($SCRIPT_ROOT + '/ajax?type=md5&',{
+                md5:md5
+            }, function(data){
+                if(data.status == false){
+                    $('#md5status').text("需要上传文件")
+                } else {
+                    var ok = '<span class="glyphicon glyphicon-ok"></span>'
+                    $('#md5status').text("可以秒传  ").append(ok)
+                    $('#upload_file').val("")
+                }
+            })
         }
-
     };
     running = true;
     $('#upload_md5').val("计算中...");
