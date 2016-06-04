@@ -27,7 +27,7 @@
 #include <openssl/sha.h>
 #include <sys/sem.h>
 #include <unistd.h>
-#include "database/DB_Operate.cpp"
+#include "database/DB_Operate.h"
 
 #define PATHSIZE 1024
 #define NAMESIZE 256
@@ -187,7 +187,7 @@ int regist(int sockfd){
 	int UID = DB.Check_User(name, passwordS);
 	char UIDS[13];
 	sprintf(UIDS, "%d", UID);
-	DB.Insert_File_Info(UIDS, "/");
+	DB.Insert_File_Info(UIDS, "/", "NULL");
 	return 0;
 }
 
@@ -234,7 +234,8 @@ int getFileList(int sockfd){
 	
 	unsigned int num = 0;//htonl(fileList.size());
 	for (int i = 0; i < fileList.size(); ++i) {
-		num += fileList[i].length() + 4;
+		string msg = path + fileList[i];
+		num += strlen(msg.c_str()) + 4;
 	}
 	num = htonl(num);
 	L = send(sockfd, &num, sizeof(num), 0);
@@ -260,7 +261,7 @@ int fileExist(int sockfd, const int UID, const char * fileName, const unsigned c
 	sprintf(UIDS, "%d", UID);
 	char flag = DB.Insert_File_Info(UIDS, fileName, md5_32);	
 	int mark = -2;
-	if (flag == false) mark = -1;
+	if (flag == false) mark = -3;
 	mark = htonl(mark);
 	int L = send(sockfd, &mark, sizeof(mark), 0);
 	if (L != sizeof(mark)) return -1;
@@ -365,10 +366,10 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 int mergeFile(const unsigned char * md5_str, const int fileL, const long long fileSize){
 	char cmd[1024];
 	char md5_file[1024];
-	sprintf(cmd, "mkdir file");
+	sprintf(cmd, "mkdir /root/files");
 	system(cmd);
 
-	sprintf(cmd, "mkdir file/%02x", md5_str[0]);
+	sprintf(cmd, "mkdir /root/files/%02x", md5_str[0]);
 	system(cmd);
 
 	char compPath[1024];
@@ -376,7 +377,7 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 	for (int i = 0; i < 16; ++i) {
 		sprintf(md5_32 + i*2, "%02x", md5_str[i]);
 	}
-	sprintf(compPath, "file/%02x/%s", md5_str[0], md5_32);
+	sprintf(compPath, "/root/files/%02x/%s", md5_str[0], md5_32);
 
 	P(semFileMerge);
 	if (access(compPath, 0) == -1) {
@@ -515,7 +516,7 @@ int addFile(int sockfd){
 
 	cout << __FILE__ << endl;
 	if (path[L-1] == '/') {
-		char flag = DB.Insert_File_Info(UIDS, path);
+		char flag = DB.Insert_File_Info(UIDS, path, "NULL");
 		int msg = flag ? 0 : -1;
 		msg = htonl(msg);
 		send(sockfd, &msg, 4, 0);
@@ -653,7 +654,7 @@ int downLoad(int sockfd){
 	char md5_32[33], compPath[PATHSIZE];
 	cout << MD5 << endl;
 	sprintf(md5_32, "%s", MD5.c_str());
-	sprintf(compPath, "file/%c%c/%s", md5_32[0], md5_32[1], md5_32);
+	sprintf(compPath, "/root/files/%c%c/%s", md5_32[0], md5_32[1], md5_32);
 	cout << compPath << endl;
 	ifstream file(compPath, ios::binary);
 
