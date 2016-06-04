@@ -39,7 +39,7 @@ bool DB_Operate::Show_File()
 	}
 }
 
-//É¸Ñ¡³öÔÚµ±Ç°Ä¿Â¼ÏÂµÄÎÄ¼şÁĞ±í
+//ç­›é€‰å‡ºåœ¨å½“å‰ç›®å½•ä¸‹çš„æ–‡ä»¶åˆ—è¡¨
 vector<string> DB_Operate::Find_File_List(vector<string> s, string aim_s)
 {
 	int i, aim_len = aim_s.size(), pos, s_len;
@@ -91,13 +91,13 @@ bool DB_Operate::Show_Status()
 	}
 }
 
-//Ôö¼ÓÒ»¸öÓÃ»§£¬Èç¹ûusernameÒÑ¾­´æÔÚÔò·µ»Øfalse£¬·ñÔòÌí¼ÓÓÃ»§²¢·µ»Øtrue
+//å¢åŠ ä¸€ä¸ªç”¨æˆ·ï¼Œå¦‚æœusernameå·²ç»å­˜åœ¨åˆ™è¿”å›falseï¼Œå¦åˆ™æ·»åŠ ç”¨æˆ·å¹¶è¿”å›true
 bool DB_Operate::Insert_User(string Username, string Password)
 {
 	vector<string> SQL_ans;
 	string DB_Command;
-//	cout << "¼ì²éUsernameÊÇ·ñ´æÔÚ" << endl;
-	Debug_Out("¼ì²éUsernameÊÇ·ñ´æÔÚ");
+//	cout << "æ£€æŸ¥Usernameæ˜¯å¦å­˜åœ¨" << endl;
+	Debug_Out("æ£€æŸ¥Usernameæ˜¯å¦å­˜åœ¨");
 	
 	DB_Command = "SELECT * FROM user WHERE username = \"" + Username + "\"";
 //	cout << DB_Command << endl;
@@ -106,47 +106,47 @@ bool DB_Operate::Insert_User(string Username, string Password)
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	if (SQL_ans.size() > 0)
 	{	
-//		cout << "¸ÃusernameÒÑ¾­´æÔÚ" << endl;
-		Debug_Out("¸ÃusernameÒÑ¾­´æÔÚ");
+//		cout << "è¯¥usernameå·²ç»å­˜åœ¨" << endl;
+		Debug_Out("è¯¥usernameå·²ç»å­˜åœ¨");
 		return false;
 	}
-//	cout << "Ôö¼Ó¸öÓÃ»§µ½Êı¾İ¿âµ±ÖĞ" << endl;
-	Debug_Out("Ôö¼Ó¸öÓÃ»§µ½Êı¾İ¿âµ±ÖĞ");
+//	cout << "å¢åŠ ä¸ªç”¨æˆ·åˆ°æ•°æ®åº“å½“ä¸­" << endl;
+	Debug_Out("å¢åŠ ä¸ªç”¨æˆ·åˆ°æ•°æ®åº“å½“ä¸­");
 	DB_Command = "INSERT INTO user(username, password) VALUES(\"" + Username + "\", \"" + Password + "\")";
 //	cout << DB_Command << endl;
 	Debug_Out(DB_Command);
 	SQL_ans.clear(); 
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-//		cout << "Ìí¼ÓÓÃ»§ĞÅÏ¢³É¹¦" << endl;
-		Debug_Out("Ìí¼ÓÓÃ»§ĞÅÏ¢³É¹¦");
+//		cout << "æ·»åŠ ç”¨æˆ·ä¿¡æ¯æˆåŠŸ" << endl;
+		Debug_Out("æ·»åŠ ç”¨æˆ·ä¿¡æ¯æˆåŠŸ");
 		return true;
 	}
 	else
 	{
-//		cout << "Ìí¼ÓÓÃ»§ĞÅÏ¢Ê§°Ü" << endl;
-		Debug_Out("Ìí¼ÓÓÃ»§ĞÅÏ¢Ê§°Ü");
+//		cout << "æ·»åŠ ç”¨æˆ·ä¿¡æ¯å¤±è´¥" << endl;
+		Debug_Out("æ·»åŠ ç”¨æˆ·ä¿¡æ¯å¤±è´¥");
 		return false;
 	}
 }
 
-//²éÑ¯Ò»¸öÓÃ»§µÄÕËºÅÃÜÂëÊÇ·ñÕıÈ·
-//Èç¹ûÕıÈ·Ôò·µ»Ø¸ÃÓÃ»§µÄÏàÓ¦id£¬·ñÔò·µ»Ø-1
+//æŸ¥è¯¢ä¸€ä¸ªç”¨æˆ·çš„è´¦å·å¯†ç æ˜¯å¦æ­£ç¡®
+//å¦‚æœæ­£ç¡®åˆ™è¿”å›è¯¥ç”¨æˆ·çš„ç›¸åº”idï¼Œå¦åˆ™è¿”å›-1
 int DB_Operate::Check_User(string Username, string Password)
 {
 	int ans;
 	stringstream ss;
 	vector<string> SQL_ans;
 	string DB_Command;
-//	cout << "¼ì²éÊı¾İ¿âÖĞÓĞÃ»ÓĞ¸ÃUsernameºÍPassword" << endl;
-	Debug_Out("¼ì²éÊı¾İ¿âÖĞÓĞÃ»ÓĞ¸ÃUsernameºÍPassword");
+//	cout << "æ£€æŸ¥æ•°æ®åº“ä¸­æœ‰æ²¡æœ‰è¯¥Usernameå’ŒPassword" << endl;
+	Debug_Out("æ£€æŸ¥æ•°æ®åº“ä¸­æœ‰æ²¡æœ‰è¯¥Usernameå’ŒPassword");
 	DB_Command = "SELECT id FROM user WHERE username = \"" + Username + "\" AND password = \"" + Password + "\""; 
 //	cout << DB_Command << endl;
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
-//	cout << "µÃµ½¸ÃÓÃ»§µÄid" << endl;
-	Debug_Out("µÃµ½¸ÃÓÃ»§µÄid");
+//	cout << "å¾—åˆ°è¯¥ç”¨æˆ·çš„id" << endl;
+	Debug_Out("å¾—åˆ°è¯¥ç”¨æˆ·çš„id");
 	if (SQL_ans.size() == 0)
 	{
 //		cout << -1 << endl;
@@ -161,7 +161,7 @@ int DB_Operate::Check_User(string Username, string Password)
 	}
 }
 
-//²éÑ¯ÎÄ¼şÁĞ±í£º¸ù¾İÓÃ»§uid£¬µ±Ç°Â·¾¶£¬»ñÈ¡µ±Ç°Â·¾¶ÏÂÎÄ¼şÁĞ±í
+//æŸ¥è¯¢æ–‡ä»¶åˆ—è¡¨ï¼šæ ¹æ®ç”¨æˆ·uidï¼Œå½“å‰è·¯å¾„ï¼Œè·å–å½“å‰è·¯å¾„ä¸‹æ–‡ä»¶åˆ—è¡¨
 vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 {
 	vector<string> ans;
@@ -169,8 +169,8 @@ vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 	string len;
 	string DB_Command;
 	stringstream ss;
-//	cout << "²éÑ¯³öÎÄ¼şÁĞ±í" << endl;
-	Debug_Out("²éÑ¯³öÎÄ¼şÁĞ±í");
+//	cout << "æŸ¥è¯¢å‡ºæ–‡ä»¶åˆ—è¡¨" << endl;
+	Debug_Out("æŸ¥è¯¢å‡ºæ–‡ä»¶åˆ—è¡¨");
 	ss << Virtual_Path.size();
 	ss >> len;
 //	cout << len << endl;
@@ -183,30 +183,30 @@ vector<string> DB_Operate::Query_File_List(string User_Id, string Virtual_Path)
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	ans = Find_File_List(SQL_ans, Virtual_Path);
-//	cout << "µÃµ½ÎÄ¼şÄ¿Â¼" << endl;
-	Debug_Out("µÃµ½ÎÄ¼şÄ¿Â¼");
+//	cout << "å¾—åˆ°æ–‡ä»¶ç›®å½•" << endl;
+	Debug_Out("å¾—åˆ°æ–‡ä»¶ç›®å½•");
 	for (int i = 0; i < ans.size(); i ++)
 //		cout << ans[i] << endl;
 		Debug_Out(ans[i]);
 	return ans;
 }
 
-//²éÑ¯MD5µÄ×´Ì¬£º¸ù¾İMD5ĞÅÏ¢£¬²éÑ¯Ëù¶ÔÓ¦ÎÄ¼şµÄ×´Ì¬£¨ÒÑÓĞ¡¢ÕıÔÚÉÏ´«¡¢Ã»ÓĞ£©£¬Ã»ÓĞ¸ÃMD5Ôò·µ»Ø-1 
+//æŸ¥è¯¢MD5çš„çŠ¶æ€ï¼šæ ¹æ®MD5ä¿¡æ¯ï¼ŒæŸ¥è¯¢æ‰€å¯¹åº”æ–‡ä»¶çš„çŠ¶æ€ï¼ˆå·²æœ‰ã€æ­£åœ¨ä¸Šä¼ ã€æ²¡æœ‰ï¼‰ï¼Œæ²¡æœ‰è¯¥MD5åˆ™è¿”å›-1 
 int DB_Operate::Query_Md5_Statu(string Md5)
 {
 	vector<string> SQL_ans;
 	int ans;
 	stringstream ss;
-	Debug_Out("²éÑ¯MD5µÄ×´Ì¬");
-//	cout << "²éÑ¯MD5µÄ×´Ì¬" << endl;
+	Debug_Out("æŸ¥è¯¢MD5çš„çŠ¶æ€");
+//	cout << "æŸ¥è¯¢MD5çš„çŠ¶æ€" << endl;
 	string DB_Command;
 	DB_Command = "SELECT status FROM status WHERE md5 = \"" + Md5 + "\"";
 //	cout << DB_Command << endl;
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
-//	cout << "¸ÃMD5µÄ×´Ì¬Îª£º" << endl;
-	Debug_Out("¸ÃMD5µÄ×´Ì¬Îª£º");
+//	cout << "è¯¥MD5çš„çŠ¶æ€ä¸ºï¼š" << endl;
+	Debug_Out("è¯¥MD5çš„çŠ¶æ€ä¸ºï¼š");
 	if (SQL_ans.size() == 0)
 	{
 //		cout << -1 << endl;
@@ -223,33 +223,33 @@ int DB_Operate::Query_Md5_Statu(string Md5)
 	}
 }
 
-//ĞŞ¸ÄMD5µÄ×´Ì¬£º¸ù¾İMD5ĞÅÏ¢£¬ºÍÒª¸ü¸ÄµÄ×´Ì¬£¬ĞŞ¸ÄÊı¾İ¿âÖĞÏàÓ¦MD5µÄ×´Ì¬
-//ĞŞ¸Ä³É¹¦Ôò·µ»Øtrue£¨ÒÑ¾­´æÔÚ¸ÃMD5£©£¬Ê§°ÜÔò·µ»Øfalse£¨²»´æÔÚ¸ÃMD5£© 
+//ä¿®æ”¹MD5çš„çŠ¶æ€ï¼šæ ¹æ®MD5ä¿¡æ¯ï¼Œå’Œè¦æ›´æ”¹çš„çŠ¶æ€ï¼Œä¿®æ”¹æ•°æ®åº“ä¸­ç›¸åº”MD5çš„çŠ¶æ€
+//ä¿®æ”¹æˆåŠŸåˆ™è¿”å›trueï¼ˆå·²ç»å­˜åœ¨è¯¥MD5ï¼‰ï¼Œå¤±è´¥åˆ™è¿”å›falseï¼ˆä¸å­˜åœ¨è¯¥MD5ï¼‰ 
 bool DB_Operate::Update_Md5_Statu(string Md5, string statu)
 {
 	vector<string> SQL_ans;
-	Debug_Out("ĞŞ¸ÄMD5µÄ×´Ì¬");
+	Debug_Out("ä¿®æ”¹MD5çš„çŠ¶æ€");
 	string DB_Command;
 	DB_Command = "UPDATE status SET status = " + statu + " WHERE md5 = \"" + Md5 + "\"";
 	Debug_Out(DB_Command);
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		Debug_Out("ĞŞ¸Ä×´Ì¬³É¹¦");
+		Debug_Out("ä¿®æ”¹çŠ¶æ€æˆåŠŸ");
 		return true;
 	}
 	else
 	{
-		Debug_Out("ĞŞ¸Ä×´Ì¬Ê§°Ü");
+		Debug_Out("ä¿®æ”¹çŠ¶æ€å¤±è´¥");
 		return false; 
 	}
 } 
 
-//Ìí¼ÓMD5µÄ×´Ì¬£º¸ù¾İMD5ĞÅÏ¢£¬ºÍÒªÌí¼ÓµÄ×´Ì¬£¬Ôö¼ÓÒ»ÌõMD5µÄ×´Ì¬ĞÅÏ¢
-//Ìí¼Ó³É¹¦Ôò·µ»Øtrue£¨²»´æÔÚ¸ÃMD5£©£¬Ê§°ÜÔò·µ»Øfalse£¨ÒÑ¾­´æÔÚ¸ÃMD5£© 
-bool DB_Operate::Insert_Md5_Statu(string Md5, string statu = NULL)
+//æ·»åŠ MD5çš„çŠ¶æ€ï¼šæ ¹æ®MD5ä¿¡æ¯ï¼Œå’Œè¦æ·»åŠ çš„çŠ¶æ€ï¼Œå¢åŠ ä¸€æ¡MD5çš„çŠ¶æ€ä¿¡æ¯
+//æ·»åŠ æˆåŠŸåˆ™è¿”å›trueï¼ˆä¸å­˜åœ¨è¯¥MD5ï¼‰ï¼Œå¤±è´¥åˆ™è¿”å›falseï¼ˆå·²ç»å­˜åœ¨è¯¥MD5ï¼‰ 
+bool DB_Operate::Insert_Md5_Statu(string Md5, string statu)
 {
-	Debug_Out("Ìí¼ÓMD5µÄ×´Ì¬");
+	Debug_Out("æ·»åŠ MD5çš„çŠ¶æ€");
 	string DB_Command;
 	vector<string> SQL_ans;
 	DB_Command = "INSERT INTO status(md5, status) VALUES(\"" + Md5 + "\", " + statu + ")"; 
@@ -257,21 +257,21 @@ bool DB_Operate::Insert_Md5_Statu(string Md5, string statu = NULL)
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		Debug_Out("Ìí¼Ó×´Ì¬³É¹¦");
+		Debug_Out("æ·»åŠ çŠ¶æ€æˆåŠŸ");
 		return true;
 	}
 	else 
 	{
-		Debug_Out("Ìí¼Ó×´Ì¬Ê§°Ü");
+		Debug_Out("æ·»åŠ çŠ¶æ€å¤±è´¥");
 		return false;
 	}
 }
 
-//²éÑ¯ÎÄ¼şµÄMD5ºÅ£º¸ù¾İÓÃ»§uid£¬ÎÄ¼şĞéÄâÂ·¾¶£¬»ñµÃÎÄ¼şMD5ºÅ£¬Èç¹û´íÎóÔò·µ»ØNULL 
+//æŸ¥è¯¢æ–‡ä»¶çš„MD5å·ï¼šæ ¹æ®ç”¨æˆ·uidï¼Œæ–‡ä»¶è™šæ‹Ÿè·¯å¾„ï¼Œè·å¾—æ–‡ä»¶MD5å·ï¼Œå¦‚æœé”™è¯¯åˆ™è¿”å›NULL 
 string DB_Operate::Query_Md5(string User_Id, string Virtual_Path)
 {
 	vector<string> SQL_ans;
-	Debug_Out("²éÑ¯ÎÄ¼şµÄMD5ºÅ");
+	Debug_Out("æŸ¥è¯¢æ–‡ä»¶çš„MD5å·");
 	string DB_Command;
 	DB_Command = "SELECT md5 FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
 	Debug_Out(DB_Command);
@@ -279,23 +279,23 @@ string DB_Operate::Query_Md5(string User_Id, string Virtual_Path)
 	db.exeSQL_SELECT(DB_Command, SQL_ans);
 	if (SQL_ans.size() > 0)
 	{
-		Debug_Out("¸ÃÎÄ¼şµÄMDºÅÎª£º");
+		Debug_Out("è¯¥æ–‡ä»¶çš„MDå·ä¸ºï¼š");
 		Debug_Out(SQL_ans[0]);
 		return SQL_ans[0];
 	}
 	else
 	{
-		Debug_Out("²éÑ¯ÎÄ¼şMDºÅÊ§°Ü£¬·µ»ØNULL");
+		Debug_Out("æŸ¥è¯¢æ–‡ä»¶MDå·å¤±è´¥ï¼Œè¿”å›NULL");
 		Debug_Out("NULL");
 		return "NULL";
 	}
 }
 
-//²åÈëÎÄ¼ş£º¸ù¾İÓÃ»§uid£¬ÎÄ¼şĞéÄâÂ·¾¶£¬MD5, ÔÚÊı¾İ¿âÖĞ²åÈëÒ»Ìõ¼ÇÂ¼
-//³É¹¦·µ»Øtrue£¬Ê§°Ü·µ»Øfalse 
-bool DB_Operate::Insert_File_Info(string User_Id, string Virtual_Path, string Md5 = "NULL")
+//æ’å…¥æ–‡ä»¶ï¼šæ ¹æ®ç”¨æˆ·uidï¼Œæ–‡ä»¶è™šæ‹Ÿè·¯å¾„ï¼ŒMD5, åœ¨æ•°æ®åº“ä¸­æ’å…¥ä¸€æ¡è®°å½•
+//æˆåŠŸè¿”å›trueï¼Œå¤±è´¥è¿”å›false 
+bool DB_Operate::Insert_File_Info(string User_Id, string Virtual_Path, string Md5)
 {
-	Debug_Out("²åÈëÒ»ÌõÎÄ¼ş¼ÇÂ¼");
+	Debug_Out("æ’å…¥ä¸€æ¡æ–‡ä»¶è®°å½•");
 	string DB_Command;
 	vector<string> ans;
 	if (Md5 == "NULL")	
@@ -305,21 +305,21 @@ bool DB_Operate::Insert_File_Info(string User_Id, string Virtual_Path, string Md
 	ans.clear();
 	if (db.exeSQL(DB_Command, ans) == false)
 	{
-		Debug_Out("²åÈëÎÄ¼ş¼ÇÂ¼Ê§°Ü");
+		Debug_Out("æ’å…¥æ–‡ä»¶è®°å½•å¤±è´¥");
 		return false;
 	}
 	else 
 	{
-		Debug_Out("²åÈëÎÄ¼ş¼ÇÂ¼³É¹¦");
+		Debug_Out("æ’å…¥æ–‡ä»¶è®°å½•æˆåŠŸ");
 		return true;
 	}
 }
 
-//É¾³ıÎÄ¼ş/ÎÄ¼ş¼Ğ£º¸ù¾İÓÃ»§uid£¬ÎÄ¼şĞéÄâÂ·¾¶£¬ÔÚÊı¾İ¿âÖĞÉ¾³ıÒ»Ìõ/Ò»ÏµÁĞ¼ÇÂ¼
-//ÎÄ¼ş/ÎÄ¼ş¼ĞÔÚÊı¾İ¿âÖĞ²»´æÔÚ£¬Ôò·µ»Øfalse,·ñÔò£¬É¾³ı¼ÇÂ¼£¬²¢·µ»Øtrue
+//åˆ é™¤æ–‡ä»¶/æ–‡ä»¶å¤¹ï¼šæ ¹æ®ç”¨æˆ·uidï¼Œæ–‡ä»¶è™šæ‹Ÿè·¯å¾„ï¼Œåœ¨æ•°æ®åº“ä¸­åˆ é™¤ä¸€æ¡/ä¸€ç³»åˆ—è®°å½•
+//æ–‡ä»¶/æ–‡ä»¶å¤¹åœ¨æ•°æ®åº“ä¸­ä¸å­˜åœ¨ï¼Œåˆ™è¿”å›false,å¦åˆ™ï¼Œåˆ é™¤è®°å½•ï¼Œå¹¶è¿”å›true
 bool DB_Operate::Delete_File_Info(string User_Id, string Virtual_Path)
 {
-	Debug_Out("É¾³ıÎÄ¼ş/ÎÄ¼ş¼Ğ");
+	Debug_Out("åˆ é™¤æ–‡ä»¶/æ–‡ä»¶å¤¹");
 	string DB_Command, len;
 	stringstream ss;
 	vector<string> SQL_ans;
@@ -332,24 +332,24 @@ bool DB_Operate::Delete_File_Info(string User_Id, string Virtual_Path)
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == true)
 	{
-		Debug_Out("É¾³ıÎÄ¼ş»òÎÄ¼ş¼Ğ³É¹¦");
+		Debug_Out("åˆ é™¤æ–‡ä»¶æˆ–æ–‡ä»¶å¤¹æˆåŠŸ");
 		return true;
 	}
 	else
 	{
-		Debug_Out("É¾³ıÎÄ¼ş»òÎÄ¼ş¼ĞÊ§°Ü");
+		Debug_Out("åˆ é™¤æ–‡ä»¶æˆ–æ–‡ä»¶å¤¹å¤±è´¥");
 		return false;
 	}
 } 
 
-//¸´ÖÆÎÄ¼ş¼Ğ»òÎÄ¼ş£¬¸ù¾İÓÃ»§uid£¬Ô´ÎÄ¼şÂ·¾¶£¬Ä¿±êÎÄ¼şÂ·¾¶£¬¸´ÖÆÒ»ÏµÁĞ¼ÇÂ¼		
-//Èç¹ûÎÄ¼ş´æÔÚ£¬Ôò¸´ÖÆÎªfilename(i)
-//Èç¹û¸´ÖÆÊ§°Ü£¬Ôò·µ»Øfalse
-//Èç¹û¸´ÖÆ³É¹¦£¬Ôò·µ»Øtrue
-//Ò»¸öÎÄ¼ş¼ĞÏÂ²»ÄÜÍ¬Ê±³öÏÖfilenameºÍfilename/
+//å¤åˆ¶æ–‡ä»¶å¤¹æˆ–æ–‡ä»¶ï¼Œæ ¹æ®ç”¨æˆ·uidï¼Œæºæ–‡ä»¶è·¯å¾„ï¼Œç›®æ ‡æ–‡ä»¶è·¯å¾„ï¼Œå¤åˆ¶ä¸€ç³»åˆ—è®°å½•		
+//å¦‚æœæ–‡ä»¶å­˜åœ¨ï¼Œåˆ™å¤åˆ¶ä¸ºfilename(i)
+//å¦‚æœå¤åˆ¶å¤±è´¥ï¼Œåˆ™è¿”å›false
+//å¦‚æœå¤åˆ¶æˆåŠŸï¼Œåˆ™è¿”å›true
+//ä¸€ä¸ªæ–‡ä»¶å¤¹ä¸‹ä¸èƒ½åŒæ—¶å‡ºç°filenameå’Œfilename/
 bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_Path)
 {
-	Debug_Out("¸´ÖÆÎÄ¼ş/ÎÄ¼ş¼Ğ");
+	Debug_Out("å¤åˆ¶æ–‡ä»¶/æ–‡ä»¶å¤¹");
 	stringstream ss;
 	string DB_Command, len;
 	int i, j;
@@ -370,7 +370,7 @@ bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_
 		return false;
 	if (SQL_ans.size() == 0)
 	{
-		Debug_Out("¸ÃÎÄ¼ş/ÎÄ¼ş¼Ğ²»´æÔÚ");
+		Debug_Out("è¯¥æ–‡ä»¶/æ–‡ä»¶å¤¹ä¸å­˜åœ¨");
 		return false;
 	}
 	Copy_File_Info.clear();
@@ -402,13 +402,13 @@ bool DB_Operate::Copy_File_Info(string User_Id, string Virtual_Path, string Aim_
 	return true;
 }
 
-//¸ü¸ÄÎÄ¼ş/ÎÄ¼ş¼ĞÃû³Æ£º¸ù¾İÓÃ»§uid£¬ÎÄ¼şĞéÄâÂ·¾¶ºÍĞŞ¸ÄºóµÃÎÄ¼ş/ÎÄ¼şÃûÂ·¾¶£¬ÔÚÊı¾İ¿âÖĞĞŞ¸ÄÒ»Ìõ/Ò»ÏµÁĞ¼ÇÂ¼
-//ĞèÒª±£Ö¤ĞŞ¸ÄºóµÄÎÄ¼şÃû/ÎÄ¼ş¼ĞÃû²»´æÔÚ
+//æ›´æ”¹æ–‡ä»¶/æ–‡ä»¶å¤¹åç§°ï¼šæ ¹æ®ç”¨æˆ·uidï¼Œæ–‡ä»¶è™šæ‹Ÿè·¯å¾„å’Œä¿®æ”¹åå¾—æ–‡ä»¶/æ–‡ä»¶åè·¯å¾„ï¼Œåœ¨æ•°æ®åº“ä¸­ä¿®æ”¹ä¸€æ¡/ä¸€ç³»åˆ—è®°å½•
+//éœ€è¦ä¿è¯ä¿®æ”¹åçš„æ–‡ä»¶å/æ–‡ä»¶å¤¹åä¸å­˜åœ¨
 bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Aim_Path)
 {
 	if (Virtual_Path.size() <= 1)
 		return false;
-	Debug_Out("ÖØÃüÃûÎÄ¼ş/ÎÄ¼ş¼Ğ");
+	Debug_Out("é‡å‘½åæ–‡ä»¶/æ–‡ä»¶å¤¹");
 	stringstream ss;
 	string DB_Command, len;
 	int i, j;
@@ -429,7 +429,7 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 		return false;
 	if (SQL_ans.size() == 0)
 	{
-		Debug_Out("¸ÃÎÄ¼ş/ÎÄ¼ş¼Ğ²»´æÔÚ");
+		Debug_Out("è¯¥æ–‡ä»¶/æ–‡ä»¶å¤¹ä¸å­˜åœ¨");
 		return false;
 	}
 	Copy_File_Info.clear();
@@ -458,7 +458,7 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == false)
 		return false;
-//=================É¾³ıÊı¾İ¿âÖĞÔ­ÎÄ¼ş/ÎÄ¼ş¼ĞµÄĞÅÏ¢==========================
+//=================åˆ é™¤æ•°æ®åº“ä¸­åŸæ–‡ä»¶/æ–‡ä»¶å¤¹çš„ä¿¡æ¯==========================
 	if (Virtual_Path[Virtual_Path.size()-1] == '/')
 		DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND left(virtualpath, " + len + ") = \"" + Virtual_Path + "\"";
 	else DB_Command = "DELETE FROM file WHERE userid = " + User_Id + " AND virtualpath = \"" + Virtual_Path + "\"";
@@ -466,9 +466,6 @@ bool DB_Operate::Update_File_Info(string User_Id, string Virtual_Path, string Ai
 	SQL_ans.clear();
 	if (db.exeSQL(DB_Command, SQL_ans) == false)
 		return false;
-//=================É¾³ıÊı¾İ¿âÖĞÔ­ÎÄ¼ş/ÎÄ¼ş¼ĞµÄĞÅÏ¢==========================
+//=================åˆ é™¤æ•°æ®åº“ä¸­åŸæ–‡ä»¶/æ–‡ä»¶å¤¹çš„ä¿¡æ¯==========================
 	return true;
 }
-
-
-
