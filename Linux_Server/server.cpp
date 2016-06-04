@@ -24,8 +24,10 @@
 #include <arpa/inet.h>
 #include <vector>
 #include <openssl/md5.h>
+#include <openssl/sha.h>
 #include <sys/sem.h>
-#include<unistd.h>
+#include <unistd.h>
+#include "database/DB_Operate.cpp"
 
 #define PATHSIZE 1024
 #define NAMESIZE 256
@@ -39,6 +41,7 @@
 #define FILEMERGEKEY (key_t)0x1210
 
 using namespace std;
+
 
 #define IFLAGS (IPC_CREAT|IPC_EXCL)
 
@@ -97,7 +100,6 @@ void V(int semid)
     semop(semid,&sb,1); 
 }
 
-
 int writeLog(const char * message){
 	ofstream log("log.txt", ofstream::app);
 	char time_str[32];
@@ -108,99 +110,152 @@ int writeLog(const char * message){
 	return 0;
 }
 
-int regist(int sockfd){
-	unsigned char NLen, PLen;
-	char name[NAMESIZE], password[PSSWSIZE];
+string md5S(const unsigned char * md5){
+	char res[33];
+	for (int i = 0; i < 16; ++i) {
+		sprintf(res + (i*2), "%x", md5[i]);
+	}
+	return res;
+}
+
+int getSmallStr(int sockfd, char * buff){
 	long L;
-	L = recv(sockfd, &NLen, sizeof(NLen), MSG_WAITALL);
-	if (L != sizeof(NLen)) return FAILURE;
-	L = recv(sockfd, name, NLen, MSG_WAITALL);
-	if (L != NLen) return FAILURE;
-	L = recv(sockfd, &PLen, sizeof(PLen), MSG_WAITALL);
-	if (L != sizeof(PLen)) return FAILURE;
-	L = recv(sockfd, password, PLen, MSG_WAITALL);
-	if (L != PLen) return FAILURE;
+	unsigned char Len = 0;
+	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
+	if (L != sizeof(Len)) return -1;
+	L = recv(sockfd, buff, Len, MSG_WAITALL);
+	if (L != Len) return -1;
+	buff[Len] = '\0';
+	return Len;
+}
+
+int getStr(int sockfd, char * buff){
+	long L;
+	int Len = 0;
+	cout << __LINE__ << ' ' << sizeof(Len) << endl;
+	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
+	cout << __LINE__ << ' ' << L << endl;
+	if (L != sizeof(Len)) return -1;
+	Len = ntohl(Len);
+	cout << __LINE__ << ' ' << Len << endl;
+	if (Len == 0) return 0;
+	cout << __LINE__ << endl;
+	L = recv(sockfd, buff, Len, MSG_WAITALL);
+	
+	cout << __LINE__ << endl;
+	if (L != Len) return -1;
+
+	cout << __LINE__ << endl;
+	buff[Len] = '\0';
+	return Len;
+}
+
+int sendStr(int sockfd, const int Len, const char * buff){
+	int nLen = htonl(Len);
+	if (send(sockfd, &nLen, sizeof(nLen), 0) != 4) return -1;
+	if (send(sockfd, buff, Len, 0) != Len) return -1;
+	return 0;
+}
+
+
+int regist(int sockfd){
+	char name[NAMESIZE], password[PSSWSIZE];
+	int L;
+	DB_Operate DB;
+	if (getSmallStr(sockfd, name) == -1) return -1;
+	if ((L = getSmallStr(sockfd, password)) == -1) return -1;
 
 	char flag;
-	//flag = sql();
+	unsigned char sha1[40];
+	char passwordS[41];
+	SHA((unsigned char *) password, L, sha1);
 	
-	L = send(sockfd, &flag, sizeof(flag), 0);
-	if (L != sizeof(flag)) return FAILURE;
+	for (int i = 0; i < 20; ++i) {
+		sprintf(passwordS + 2*i, "%x", (int)sha1[i]);
+	}
+
+	flag = DB.Insert_User(name, passwordS);
+	flag = flag ? 0x00 : -1;
+	if (send(sockfd, &flag, sizeof(flag), 0) != sizeof(flag)) return -1;
 	return 0;
 }
 
 int logIn(int sockfd){
-	unsigned char NLen, PLen;
 	char name[NAMESIZE], password[PSSWSIZE];
-	long L;
-	L = recv(sockfd, &NLen, sizeof(NLen), MSG_WAITALL);
-	if (L != sizeof(NLen)) return FAILURE;
-	L = recv(sockfd, name, NLen, MSG_WAITALL);
-	if (L != NLen) return FAILURE;
-	L = recv(sockfd, &PLen, sizeof(PLen), MSG_WAITALL);
-	if (L != sizeof(PLen)) return FAILURE;
-	L = recv(sockfd, password, PLen, MSG_WAITALL);
-	if (L != PLen) return FAILURE;
-	
+	int L;
+	DB_Operate DB;
+	if (getSmallStr(sockfd, name) == -1) return -1;
+	if ((L = getSmallStr(sockfd, password)) == -1) return -1;
+
+	unsigned char sha1[40];
+	char passwordS[41];
+	SHA((unsigned char *) password, L, sha1);
+	for (int i = 0; i < 20; ++i) {
+		sprintf(passwordS + 2*i, "%x", (int)sha1[i]);
+	}
+
 	long UID;
-	//UID = sql();
-	
+	UID = DB.Check_User(name, passwordS);
+	if (UID == -1) UID == 0;
+
 	UID = htonl(UID);
-	L = send(sockfd, &UID, sizeof(UID), 0);
-	if (L != sizeof(UID)) return FAILURE;
+	if (send(sockfd, &UID, sizeof(UID), 0) != sizeof(UID)) return -1;
 	return 0;
 }
 
 int getFileList(int sockfd){
-	long Len, UID, L;
+	DB_Operate DB;
+	int Len, UID, L;
 	char path[PATHSIZE];
-	L = recv(sockfd, &UID, sizeof(Len), MSG_WAITALL);
-	if (L != sizeof(Len)) return FAILURE;
-	UID = ntohl(UID);
-
-	L = recv(sockfd, &Len, sizeof(UID), MSG_WAITALL);
+	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
+	cout << L << endl;
 	if (L != sizeof(UID)) return FAILURE;
-	Len = ntohl(Len);
+	UID = ntohl(UID);
+	if (getStr(sockfd, path) == -1) {
+		writeLog("path error");
+		return -1;
+	}
 
-	L = recv(sockfd, path, Len, MSG_WAITALL);
-	if (L != Len) return FAILURE;
-
-	vector<string> fileList;
-
-	
-	//fileList = sql();
-	
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	vector<string> fileList = DB.Query_File_List(UIDS, path);
 	
 	unsigned int num = htonl(fileList.size());
 	L = send(sockfd, &num, sizeof(num), 0);
 	if (L != sizeof(num)) return FAILURE;
 
+
 	for (int i = 0; i < fileList.size(); ++i) {
-		int size = htonl(fileList[i].length());
-		L = send(sockfd, &size, sizeof(size), 0);
-		if (L != sizeof(size)) return FAILURE;
-		L = send(sockfd, fileList[i].c_str(), fileList[i].length(), 0);
-		if (L != fileList[i].length()) return FAILURE;
+		string msg = path + fileList[i];
+		if (sendStr(sockfd, msg.length(), msg.c_str()) == -1) return -1;
 	}
 
 	return 0;
 }
 
-int fileExist(int sockfd, const char * fileName, const char * md5_str){
-	long mark = -2;
+int fileExist(int sockfd, const int UID, const char * fileName, const unsigned char * md5_str){
+	char md5_32[33];
+	DB_Operate DB;
+
+	for (int i = 0; i < 16; ++i) {
+		sprintf(md5_32 + i * 2, "%x", md5_str[i]);
+	}
+
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	char flag = DB.Insert_File_Info(UIDS, fileName, md5_32);	
+	int mark = -2;
+	if (flag == false) mark = -1;
 	mark = htonl(mark);
 	int L = send(sockfd, &mark, sizeof(mark), 0);
 	if (L != sizeof(mark)) return -1;
-
-	//sql();
-
 	return 0;
 }
 
 int semCreateFile = sem_init(CREATEFILEKEY, 1);
 int semFileMerge = sem_init(FILEMERGEKEY, 1);
 
-int createConfig(const char * fileName, const char * md5_str, const long long fileSize){
+int createConfig(const unsigned char * md5_str, const long long fileSize){
 	
 	char cmd[1024];
 	char md5_file[1024];
@@ -219,18 +274,19 @@ int createConfig(const char * fileName, const char * md5_str, const long long fi
 	sprintf(cmd, "mkdir %s", md5_file);
 	system(cmd);
 
-	sprintf(cmd + l, "/cfg");
+	sprintf(cmd, "upload/%x/%s/cfg", md5_str[0], md5S(md5_str).c_str());
 	P(semCreateFile);
 	
-	if (access(cmd, 0) != -1) {
+	if (access(cmd, 0) == -1) {
 		ofstream file(cmd, ios::binary);
 		int blockNum = (fileSize - 1) / (1024*1024) + 1;
+		cout << blockNum << endl;
 		char flag = 0;
 		for (int i = 0; i < blockNum; ++i)
 			file.write(&flag, 1);
-
-	//sql();
-	
+		
+		DB_Operate DB;
+		DB.Insert_Md5_Statu(md5S(md5_str), "2");
 	}
 	V(semCreateFile);
 	return 0;
@@ -238,7 +294,7 @@ int createConfig(const char * fileName, const char * md5_str, const long long fi
 
 
 
-int recvFile(int sockfd, const char * md5_str, int blockNum){
+int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 	int size, L;
 	char buff[2048];
 	unsigned char md5[16];
@@ -246,21 +302,28 @@ int recvFile(int sockfd, const char * md5_str, int blockNum){
 	char md5_32[33];
 	char path[1024];
 
-	char md5_32[33];
 	for (int i = 0; i < 16; ++i) {
 		sprintf(md5_32 + i*2, "%x", md5_str[i]);
 	}
 	sprintf(path, "upload/%x/%s/%d", md5_str[0], md5_32, blockNum);
 
+	cout << __LINE__ << endl;
 	L = recv(sockfd, &size, sizeof(size), MSG_WAITALL);
 	if (L != sizeof(size)) return -1;
+	cout << size << endl;
 	size = ntohl(size);
+	cout << size << endl;
 	MD5_CTX c;
+	MD5_Init(&c);
 	ofstream file(path);
 	while (size > 0) {
+		cout << size << endl;
 		int s = min(size, 1024);
 		size -= s;
 		L = recv(sockfd, buff, s, MSG_WAITALL);
+		buff[L] = 0;
+		puts(buff);
+		cout << L << endl;
 		if (L != s) return -1;
 		MD5_Update(&c, buff, L);
 		file.write(buff, L);
@@ -269,14 +332,23 @@ int recvFile(int sockfd, const char * md5_str, int blockNum){
 	L = recv(sockfd, md5, 16, MSG_WAITALL);
 	if (L != 16) return -1;
 	MD5_Final(md5_chk,&c);
-	for (int i = 0; i < 16; ++i) 
+	for (int i = 0; i < 16; ++i) {
+		cout << (int)md5_chk[i] << ' ' << (int)md5[i] << endl;
 		if (md5_chk[i] != md5[i]) return -1;
+	}
 	return 0;
 }
 
-int mergeFile(const char * md5_str, const long fileL, const long long fileSize){
+int mergeFile(const unsigned char * md5_str, const int fileL, const long long fileSize){
+	char cmd[1024];
+	char md5_file[1024];
+	sprintf(cmd, "mkdir file");
+	system(cmd);
+
+	sprintf(cmd, "mkdir file/%x", md5_str[0]);
+	system(cmd);
+
 	char compPath[1024];
-	
 	char md5_32[33];
 	for (int i = 0; i < 16; ++i) {
 		sprintf(md5_32 + i*2, "%x", md5_str[i]);
@@ -294,12 +366,12 @@ int mergeFile(const char * md5_str, const long fileL, const long long fileSize){
 		}
 	}
 
-	char cmd[1024];
 	sprintf(cmd, "rm -rf upload/%x/%s", md5_str[0], md5_32);
 	system(cmd);
 	V(semFileMerge);
 
-	//sql()
+	DB_Operate DB;
+	int flag = DB.Update_Md5_Statu(md5_32, "1"); 
 
 	return 0;
 }
@@ -307,7 +379,7 @@ int mergeFile(const char * md5_str, const long fileL, const long long fileSize){
 
 
 int semFileOp = sem_init(FILEOPKEY, 1);
-int selectBlock(int sockfd, const char * path, const char * md5_str, const long long fileSize){
+int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, const long long fileSize){
 	char cfg_file[1024];
 	sprintf(cfg_file, "upload/%x/", md5_str[0]);
 	for (int i  = 0; i < 16; ++i) {
@@ -318,9 +390,11 @@ int selectBlock(int sockfd, const char * path, const char * md5_str, const long 
 	sprintf(cfg_file + l, "/cfg");
 	
 	P(semFileOp);
-
+	if (access(cfg_file, 0) == -1) {
+		createConfig(md5_str, fileSize);
+	}
 	int fileL;
-	fstream file(cfg_file, ios::in|ios::out);
+	fstream file(cfg_file, ios::in|ios::out|ios::binary);
 	file.seekg(0, ios::end);
 	fileL = file.tellg();
 	char flag = 0;
@@ -328,13 +402,17 @@ int selectBlock(int sockfd, const char * path, const char * md5_str, const long 
 	int blockNum = -1;
 	int overNum = 0;
 
+	cout << cfg_file << endl;
 	for (int i = 0; i < fileL; ++i) {
 		file.read(&flag, 1);
+		cout << "i : " << i << endl;
 		if (flag != -1) overmark = 0;
 		if (flag == 0 && blockNum == -1) {
+			cout << (int)flag << endl;
 			blockNum = i;
 			file.seekg(i, ios::beg);
 			flag = 1;
+			cout << (int)flag << endl;
 			file.write(&flag, 1);
 		}
 		if (flag == -1) ++overNum;
@@ -347,21 +425,20 @@ int selectBlock(int sockfd, const char * path, const char * md5_str, const long 
 	} else if (overmark == 0 && blockNum == -1){
 		blockNum = -2;
 	}
+	cout << blockNum << endl;
 	blockNum = htonl(blockNum);
-	recv(sockfd, &blockNum, sizeof(blockNum), MSG_WAITALL);
-	if (overmark == 0 && blockNum == -1) return 0;
+	send(sockfd, &blockNum, sizeof(blockNum), 0);
+	if (overmark == 1 || blockNum == -1) return 0;
 
-	if (overmark == 1) {
-		//add_file to complete;
-		mergeFile(md5_str, fileL, fileSize);
-	} else {
-		flag = recvFile(sockfd, md5_str, blockNum);
-	}
+	cout << "recv" << blockNum << endl;
+	if (blockNum != -1) flag = recvFile(sockfd, md5_str, blockNum);
+	cout << __FILE__ << __LINE__ << endl;
+	if (flag == -1) return -1;
+	cout << "xxx" << endl;
 
 	P(semFileOp);
-	fstream file_(cfg_file, ios::in|ios::out);
+	fstream file_(cfg_file, ios::in|ios::out|ios::binary);
 	file_.seekg(blockNum, ios::beg);
-
 	if (flag == 0) {
 		++overNum;
 		char buf = -1;
@@ -370,8 +447,19 @@ int selectBlock(int sockfd, const char * path, const char * md5_str, const long 
 		char buf = 0;
 		file_.write(&buf, 1);
 	}
+
+	file_.seekg(0, ios::beg);
+	overNum = 0;
+	for (int i = 0; i < fileL; ++i) {
+		file_.read(&flag, 1);
+		cout << (int)flag << endl;
+		if (flag == -1) ++overNum;
+	}
 	file_.close();
 	V(semFileOp);
+	cout << overNum << ' ' << flag << ' ' << fileL << endl;
+	
+	if (overNum == fileL) mergeFile(md5_str, fileL, fileSize);
 
 	overNum = htonl(overNum);
 	int L = send(sockfd, &overNum, sizeof(overNum), 0);
@@ -381,69 +469,86 @@ int selectBlock(int sockfd, const char * path, const char * md5_str, const long 
 
 
 int addFile(int sockfd){
-	long UID, Len;
+	int UID, Len;
 	long long fileSize;
 	char path[PATHSIZE];
-	char md5_str[16];
+	unsigned char md5_str[16];
 	int L;
-	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
-	if (L != sizeof(UID)) return -1;
+	DB_Operate DB;
+
+	if (recv(sockfd, &UID, sizeof(UID), MSG_WAITALL) != 4) return -1;
 	UID = ntohl(UID);
 
-	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
-	if (L != sizeof(Len)) return -1;
-	Len = ntohl(Len);
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	
+	cout << __FILE__ << endl;
+	if ((L = getStr(sockfd, path)) == -1) return -1;
 
-	L = recv(sockfd, path, Len, MSG_WAITALL);
-	if (L != Len) return -1;
+	cout << __FILE__ << endl;
+	if (path[L-1] == '/') {
+		char flag = DB.Insert_File_Info(UIDS, path);
+		int msg = flag ? 0 : -1;
+		msg = htonl(msg);
+		send(sockfd, &msg, 4, 0);
+		return 0;
+	}
 
+	cout << __FILE__ << endl;
 	L = recv(sockfd, md5_str, 16, MSG_WAITALL);
 	if (L != 16) return -1;
 
-	L = recv(sockfd, &fileSize, sizeof(fileSize), MSG_WAITALL);
-	if (L != sizeof(fileSize)) return -1;
+	cout << __FILE__ << endl;
+	L = recv(sockfd, &fileSize, 8, MSG_WAITALL);
+	if (L != 8) return -1;
 	fileSize = ntohll(fileSize);
+	cout << fileSize << endl;
 
 	char flag;
-
-	//flag = sql();
+	flag = DB.Query_Md5_Statu(md5S(md5_str));
 	
+
+	cout << flag << endl;
+
+	int msg = -1;
 	switch (flag) {
-		case 0:
-			return fileExist(sockfd, path, md5_str);
+		case -1:
+			createConfig(md5_str, fileSize);
 			break;
 		case 1:
-			createConfig(path, md5_str, fileSize);
+			return fileExist(sockfd, UID, path, md5_str);
 			break;
 		case 2:
-			//nothing
 			break;
+		case 3:
+			return 0;
 		default:
 			return -1;
 	}
 
+	cout << "selectBlock" << endl;
 	return selectBlock(sockfd, path, md5_str, fileSize);
 }
 
 
 
 int delFile(int sockfd){
-	long Len, UID, L;
+	int Len, UID, L;
 	char path[PATHSIZE];
-	L = recv(sockfd, &UID, sizeof(Len), MSG_WAITALL);
-	if (L != sizeof(Len)) return FAILURE;
+	DB_Operate DB;
+
+	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
 
-	L = recv(sockfd, &Len, sizeof(UID), MSG_WAITALL);
-	if (L != sizeof(UID)) return FAILURE;
-	Len = ntohl(Len);
-
-	L = recv(sockfd, path, Len, MSG_WAITALL);
-	if (L != Len) return FAILURE;
+	if (getStr(sockfd, path) == -1) return -1;
 
 	char flag;
-	//flag = sql();
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	flag = DB.Delete_File_Info(UIDS, path);
 	
+	flag = flag ? 0 : -1;
 	L = send(sockfd, &flag, sizeof(flag), 0);
 	if (L != sizeof(flag)) return FAILURE;
 
@@ -453,59 +558,43 @@ int delFile(int sockfd){
 int moveFile(int sockfd){
 	int SLen, DLen, UID, L;
 	char SPath[PATHSIZE], DPath[PATHSIZE];
+	DB_Operate DB;
 	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
 	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
 
-	L = recv(sockfd, &SLen, sizeof(SLen), MSG_WAITALL);
-	if (L != sizeof(SLen)) return FAILURE;
-	SLen = ntohl(SLen);
-	
-	L = recv(sockfd, SPath, SLen, MSG_WAITALL);
-	if (L != SLen) return FAILURE;
-	
-	L = recv(sockfd, &DLen, sizeof(DLen), MSG_WAITALL);
-	if (L != sizeof(DLen)) return FAILURE;
-	DLen = ntohl(DLen);
-	
-	L = recv(sockfd, DPath, DLen, MSG_WAITALL);
-	if (L != DLen) return FAILURE;
-	
+	if (getStr(sockfd, SPath) == -1) return -1;
+	if (getStr(sockfd, DPath) == -1) return -1;
+
 	char flag;
-	//flag = sql();
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	flag = DB.Update_File_Info(UIDS, SPath, DPath);
 	
-	
-	L = write(sockfd, &flag, sizeof(flag));
+	flag = flag ? 0 : -1;
+	L = send(sockfd, &flag, sizeof(flag), 0);
 	if (L != sizeof(flag)) return FAILURE;
 	return 0;
 }
 
 int copyFile(int sockfd){
+	DB_Operate DB;
 	int SLen, DLen, UID, L;
 	char SPath[PATHSIZE], DPath[PATHSIZE];
 	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
 	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
 
-	L = recv(sockfd, &SLen, sizeof(SLen), MSG_WAITALL);
-	if (L != sizeof(SLen)) return FAILURE;
-	SLen = ntohl(SLen);
-	
-	L = recv(sockfd, SPath, SLen, MSG_WAITALL);
-	if (L != SLen) return FAILURE;
-	
-	L = recv(sockfd, &DLen, sizeof(DLen), MSG_WAITALL);
-	if (L != sizeof(DLen)) return FAILURE;
-	DLen = ntohl(DLen);
-	
-	L = recv(sockfd, DPath, DLen, MSG_WAITALL);
-	if (L != DLen) return FAILURE;
-	
+	if (getStr(sockfd, SPath) == -1) return -1;
+	if (getStr(sockfd, DPath) == -1) return -1;
+
 	char flag;
-	//flag = sql();
-	
-	
-	L = write(sockfd, &flag, sizeof(flag));
+	char UIDS[13];
+	sprintf(UIDS, "%d", UID);
+	flag = DB.Copy_File_Info(UIDS, SPath, DPath);
+	flag = flag ? 0 : -1;
+
+	L = send(sockfd, &flag, sizeof(flag), 0);
 	if (L != sizeof(flag)) return FAILURE;
 	return 0;
 }
@@ -517,56 +606,69 @@ int downLoad(int sockfd){
 	if (L != sizeof(UID)) return -1;
 	UID = ntohl(UID);
 
-	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
-	if (L != sizeof(Len)) return -1;
-	Len = ntohl(Len);
+	if (getStr(sockfd, path) == -1) return -1;
 
-	L = recv(sockfd, path, Len, MSG_WAITALL);
-	if (L != Len) return -1;
-
-	string MD5;
 	char flag;
-
-
-	//MD5 = sql();
-	//flag = sql(MD5.c_str());
+	char UIDS[20];
+	sprintf(UIDS, "%d", UID);
 	
-	
+	DB_Operate DB;
+	string MD5 = DB.Query_Md5(UIDS, path);
+	flag = DB.Query_Md5_Statu(MD5);
+	cout << (int)flag << endl;
 	long long res;
-	if (flag == -1) res = -1;
-	ifstream file(MD5.c_str(), ios::binary);
+	if (flag != 1) {
+		int msg = -1;
+		send(sockfd, &msg, 4, 0);
+		return -1;
+	}
+	
+	char md5_32[33], compPath[PATHSIZE];
+	cout << MD5 << endl;
+	sprintf(md5_32, "%s", MD5.c_str());
+	sprintf(compPath, "file/%c%c/%s", md5_32[0], md5_32[1], md5_32);
+	cout << compPath << endl;
+	ifstream file(compPath, ios::binary);
+
 	if (!file.is_open()) {
+		cout << "file error" << endl;
 		res = -1;
 	}
-	res = htonll(res);
 	if (res == -1) {
 		send(sockfd, &res, sizeof(res), 0);
 		return -1;
 	}
 	file.seekg(0, ios::end);
 	res = file.tellg();
+	long long fileSize = res;
+	cout << "file size : " << res << endl;
+	res = htonll(res);
 	L = send(sockfd, &res, sizeof(res), 0);
 	if (L != sizeof(res)) return -1;
 	for (;;) {
-		long num;
+		int num;
 		L = recv(sockfd, &num, sizeof(num), MSG_WAITALL);
 		if (L != sizeof(num)) return -1;
+		num = ntohl(num);
 		
 		MD5_CTX c;
-
-		long size = BLOCKSIZE;
-		unsigned long long offset = num * BLOCKSIZE;
+		MD5_Init(&c);
+		int size = BLOCKSIZE;
+		unsigned long long offset = 1LL * num * BLOCKSIZE;
 		file.seekg(offset, ios::beg);
-		if (offset + BLOCKSIZE >= res) size = res - offset;
+		if (offset + BLOCKSIZE >= fileSize) size = fileSize - offset;
 
-		long tsize = htonl(size);
+		int tsize = htonl(size);
 		L = send(sockfd, &tsize, sizeof(tsize), 0);
 		if (L != sizeof(tsize)) return -1;
 
+		cout << offset << ' ' << size << ' ' << tsize << endl;
 		char buff[2048];
 		while (size > 0) {
 			int l = min(1024, size);
+			cout << l << endl;
 			size -= l;
+			cout << size << endl;
 			file.read(buff, l);
 			MD5_Update(&c, buff, l);
 			L = send(sockfd, buff, l, 0);

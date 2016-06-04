@@ -1,5 +1,7 @@
-#include "DB_Info.cpp"
-#include "MyDB.cpp"
+#ifndef __DBOperate_H__
+#define __DBOperate_H__
+#include "DB_Info.h"
+#include "MyDB.h"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -55,3 +57,4 @@ class DB_Operate
 	private:
 		MyDB db;
 };
+#endif

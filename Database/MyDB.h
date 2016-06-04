@@ -1,4 +1,5 @@
 #ifndef __MYBD_H__
+#define __MYDB_H__
 #include<iostream>  
 #include<string>  
 #include<mysql/mysql.h>  

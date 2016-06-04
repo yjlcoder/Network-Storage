@@ -1,4 +1,4 @@
-#include "DB_Operate.cpp"
+#include "DB_Operate.h"
 #include <iostream>
 #include <string>
 using namespace std;
@@ -35,7 +35,7 @@ int main()
 		else if (Type_num == 1)
 		{
 			cout << "请输入用户名和密码" << endl;
-//			cin >> username >> password;
+			cin >> username >> password;
 //			cout << username << endl;
 			cout << password << endl;
 			DB_OPT.Insert_User(username,password); 
