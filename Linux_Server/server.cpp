@@ -27,6 +27,7 @@
 #include <openssl/sha.h>
 #include <sys/sem.h>
 #include <unistd.h>
+#include <sys/stat.h>  
 #include "database/DB_Operate.h"
 
 #define PATHSIZE 1024
@@ -71,6 +72,16 @@ unsigned long long ntohll(unsigned long long x){
 			| (unsigned long long)ntohl(high));
 }
 
+struct flock* file_lock(short type, short whence)  
+{  
+    static struct flock ret;  
+    ret.l_type = type ;  
+    ret.l_start = 0;  
+    ret.l_whence = whence;  
+    ret.l_len = 0;  
+    ret.l_pid = getpid();  
+    return &ret;  
+}
 
 int sem_init(key_t key, int inival)
 {
@@ -109,6 +120,19 @@ int writeLog(const char * message){
 	log.close();
 	return 0;
 }
+
+  
+long long get_file_size(const char *path)  
+{  
+    long long filesize = -1;      
+    struct stat statbuff;  
+    if(stat(path, &statbuff) < 0){  
+        return filesize;  
+    }else{  
+        filesize = statbuff.st_size;  
+    }  
+    return filesize;  
+}  
 
 string md5S(const unsigned char * md5){
 	char res[33];
@@ -263,15 +287,13 @@ int fileExist(int sockfd, const int UID, const char * fileName, const unsigned c
 	sprintf(UIDS, "%d", UID);
 	char flag = DB.Insert_File_Info(UIDS, fileName, md5_32);	
 	int mark = -2;
-	if (flag == false) mark = -3;
+	if (flag == false) mark = -1;
 	mark = htonl(mark);
 	int L = send(sockfd, &mark, sizeof(mark), 0);
 	if (L != sizeof(mark)) return -1;
 	return 0;
 }
 
-int semCreateFile = sem_init(CREATEFILEKEY, 1);
-int semFileMerge = sem_init(FILEMERGEKEY, 1);
 
 int createConfig(const unsigned char * md5_str, const long long fileSize){
 	
@@ -293,8 +315,10 @@ int createConfig(const unsigned char * md5_str, const long long fileSize){
 	system(cmd);
 
 	sprintf(cmd, "upload/%02x/%s/cfg", md5_str[0], md5S(md5_str).c_str());
-	P(semCreateFile);
 	
+	int fd = open("lockCreateFile", O_WRONLY|O_APPEND);
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);  
+
 	if (access(cmd, 0) == -1) {
 		cout << cmd << endl;
 		ofstream file(cmd, ios::binary);
@@ -314,7 +338,8 @@ int createConfig(const unsigned char * md5_str, const long long fileSize){
 		DB.Insert_Md5_Statu(md5S(md5_str), "2");
 		file.close();
 	}
-	V(semCreateFile);
+	
+    fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
 	return 0;
 }
 
@@ -381,7 +406,9 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 	}
 	sprintf(compPath, "/root/files/%02x/%s", md5_str[0], md5_32);
 
-	P(semFileMerge);
+	int fd = open("lockFileMerge", O_WRONLY|O_APPEND);  
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
+
 	if (access(compPath, 0) == -1) {
 		ofstream compF(compPath, ios::binary);
 		for (int i = 0; i < fileL; ++i) {
@@ -389,22 +416,17 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 			sprintf(sourPath, "upload/%02x/%s/%d", md5_str[0], md5_32, i);
 			ifstream sourF(sourPath, ios::binary);
 			compF << sourF.rdbuf();
+			sourF.close();
 		}
+		DB_Operate DB;
+		int flag = DB.Update_Md5_Statu(md5_32, "1"); 
+		sprintf(cmd, "rm -rf upload/%02x/%s", md5_str[0], md5_32);
+		system(cmd);
 	}
-
-	sprintf(cmd, "rm -rf upload/%02x/%s", md5_str[0], md5_32);
-	system(cmd);
-	V(semFileMerge);
-
-	DB_Operate DB;
-	int flag = DB.Update_Md5_Statu(md5_32, "1"); 
-
+	fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
 	return 0;
 }
 
-
-
-int semFileOp = sem_init(FILEOPKEY, 1);
 int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, const long long fileSize){
 	char cfg_file[1024];
 	sprintf(cfg_file, "upload/%02x/", md5_str[0]);
@@ -415,17 +437,18 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	int l = strlen(cfg_file);
 	sprintf(cfg_file + l, "/cfg");
 	
-	P(semFileOp);
+	int fd = open("lockFileOp", O_WRONLY|O_APPEND);  
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
+
 	if (access(cfg_file, 0) == -1) {
 		createConfig(md5_str, fileSize);
 	}
 	int fileL;
 	fstream file(cfg_file, ios::in|ios::out|ios::binary);
-	file.seekg(0, ios::end);
-	fileL = file.tellg();
+	fileL = get_file_size(cfg_file);  
 	char flag = 0;
 	char overmark = 1;
-	int blockNum = -1;
+	int blockNum = -3;
 	int overNum = 0;
 	file.seekg(0, ios::beg);
 	cout << cfg_file << endl;
@@ -433,7 +456,7 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 		file.read(&flag, 1);
 		//cout << "i : " << i << ' ' << (int)flag << endl;
 		if (flag != -1) overmark = 0;
-		if (flag == 0 && blockNum == -1) {
+		if (flag == 0 && blockNum == -3) {
 			//cout << (int)flag << endl;
 			blockNum = i;
 			file.seekg(i, ios::beg);
@@ -444,17 +467,12 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 		}
 	}
 	file.close();
-	V(semFileOp);
+	fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
 	
-	if (overmark == 1) {
-		blockNum = -1;
-	} else if (overmark == 0 && blockNum == -1){
-		blockNum = -2;
-	}
 	cout << "blockNum : " << blockNum << endl;
 	int tblockNum = htonl(blockNum);
 	send(sockfd, &tblockNum, sizeof(tblockNum), 0);
-	if (overmark == 1 || blockNum == -1) {
+	if (overmark == 1 || blockNum == -3) {
 		if (overmark == 1) mergeFile(md5_str, fileL, fileSize);
 		return 0;
 	}
@@ -466,7 +484,9 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	//if (flag == -1) return -1;
 	cout << "xxx" << endl;
 
-	P(semFileOp);
+	fd = open("lockFileOp", O_WRONLY|O_APPEND);  
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
+
 	fstream file_(cfg_file, ios::in|ios::out|ios::binary);
 	file_.seekg(blockNum, ios::beg);
 	if (flag == 0) {
@@ -486,7 +506,8 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 		if (flag == -1) ++overNum;
 	}
 	file_.close();
-	V(semFileOp);
+	fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
+
 	//if (flag == -1) return -1;
 
 	cout << overNum << ' ' << flag << ' ' << fileL << endl;
@@ -668,8 +689,7 @@ int downLoad(int sockfd){
 		send(sockfd, &res, sizeof(res), 0);
 		return -1;
 	}
-	file.seekg(0, ios::end);
-	res = file.tellg();
+	res = get_file_size(compPath);
 	long long fileSize = res;
 	cout << "file size : " << res << endl;
 	res = htonll(res);
@@ -802,8 +822,10 @@ void createServer(int portNumber){
 		int pid = fork();
 		if (pid == 0) {
 			int flag = exec(sockCli);
-			if (flag == -1) 
+			if (flag == -1) {
+				writeLog("something is error!");
 				send(sockCli, &flag, 4, 0);
+			}
 			exit(flag);
 		} else {
 			close(sockCli);
@@ -813,6 +835,18 @@ void createServer(int portNumber){
 }
 
 int main(){
+	FILE * fp;
+	fp = fopen("lockCreateFile", "w");
+	fclose(fp);
+	fp = fopen("lockFileMerge", "w");
+	fclose(fp);
+	fp = fopen("lockFileOp", "w");
+	fclose(fp);
+
+	int semCreateFile = sem_init(CREATEFILEKEY, 1);
+	int semFileMerge = sem_init(FILEMERGEKEY, 1);
+	int semFileOp = sem_init(FILEOPKEY, 1);
+
 	createServer(8192);
 }
 
