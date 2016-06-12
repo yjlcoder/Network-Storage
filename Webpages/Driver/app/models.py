@@ -5,6 +5,7 @@ class User(db.Model):
     username = db.Column(db.String(128), index=True, unique=True, nullable=False)
     password = db.Column(db.CHAR(40), nullable=False)
     files = db.relationship('File', backref="uploader", lazy='dynamic')
+    logs = db.relationship('Log', backref="user", lazy='dynamic')
 
     def __repr__(self):
         return "<User %r>" % (self.username)
@@ -36,3 +37,9 @@ class Status(db.Model):
     md5 = db.Column(db.CHAR(32), primary_key=True)
     status = db.Column(db.Integer, nullable=False) # define: 1 - OK, 2 - In process 3 - Folder
     files = db.relationship('File', backref = 'status', lazy='dynamic')
+
+class Log(db.Model):
+    logid = db.Column(db.Integer, primary_key = True, nullable = False)
+    userid = db.Column(db.Integer, db.ForeignKey('user.id'))
+    time = db.Column(db.DateTime, nullable = False)
+    status = db.Column(db.Boolean, nullable = False)

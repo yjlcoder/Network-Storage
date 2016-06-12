@@ -27,6 +27,7 @@ int main()
 		cout << "11.删除一个文件或是一个文件夹" << endl;
 		cout << "12.拷贝一个文件或是一个文件夹" << endl;
 		cout << "13.更新一个文件或是一个文件夹的名称" << endl;
+		cout << "14.显示所有的用户登录记录" << endl;
 		cin >> Type_num;
 		if (Type_num == 0)
 		{
@@ -108,6 +109,10 @@ int main()
 			cout << "请输入用户id和文件虚拟路径和重命名后文件虚拟路径" << endl;
 			cin >> userid >> virtualpath >> aimpath;
 			DB_OPT.Update_File_Info(userid, virtualpath, aimpath);
+		}
+		else if (Type_num == 14)
+		{
+			DB_OPT.Show_Log();
 		}
 	}
 //	DB_OPT.Check_User("123","456"); 
