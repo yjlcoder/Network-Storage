@@ -146,10 +146,8 @@ int getSmallStr(int sockfd, char * buff){
 	int L;
 	unsigned char Len = 0;
 	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
-	cout << Len << endl;
 	if (L != sizeof(Len)) return -1;
 	L = recv(sockfd, buff, Len, MSG_WAITALL);
-	cout << buff << endl;
 	if (L != Len) return -1;
 	buff[Len] = '\0';
 	return Len;
@@ -158,20 +156,14 @@ int getSmallStr(int sockfd, char * buff){
 int getStr(int sockfd, char * buff){
 	int L;
 	int Len = 0;
-	cout << __LINE__ << ' ' << sizeof(Len) << endl;
 	L = recv(sockfd, &Len, sizeof(Len), MSG_WAITALL);
-	cout << __LINE__ << ' ' << L << endl;
 	if (L != sizeof(Len)) return -1;
 	Len = ntohl(Len);
-	cout << __LINE__ << ' ' << Len << endl;
 	if (Len == 0) return 0;
-	cout << __LINE__ << endl;
 	L = recv(sockfd, buff, Len, MSG_WAITALL);
 	
-	cout << __LINE__ << endl;
 	if (L != Len) return -1;
 
-	cout << __LINE__ << endl;
 	buff[Len] = '\0';
 	return Len;
 }
@@ -197,7 +189,6 @@ int regist(int sockfd){
 	char flag;
 	unsigned char sha1[40];
 	char passwordS[41];
-	cout << password << endl;
 	SHA1((unsigned char *) password, L, sha1);
 	
 	for (int i = 0; i < 20; ++i) {
@@ -224,7 +215,6 @@ int logIn(int sockfd){
 
 	unsigned char sha1[40];
 	char passwordS[41];
-	cout << password << endl;
 	SHA1((unsigned char *) password, L, sha1);
 	for (int i = 0; i < 20; ++i) {
 		sprintf(passwordS + 2*i, "%02x", (int)sha1[i]);
@@ -244,7 +234,6 @@ int getFileList(int sockfd){
 	int Len, UID, L;
 	char path[PATHSIZE];
 	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
-	cout << L << endl;
 	if (L != sizeof(UID)) return FAILURE;
 	UID = ntohl(UID);
 	if (getStr(sockfd, path) == -1) {
@@ -257,10 +246,8 @@ int getFileList(int sockfd){
 	vector<string> fileList = DB.Query_File_List(UIDS, path);
 	
 	unsigned int num = 0;//htonl(fileList.size());
-	cout << "size : " << fileList.size() << endl;
 	for (int i = 0; i < fileList.size(); ++i) {
 		string msg = path + fileList[i];
-cout << msg << endl;
 		num += strlen(msg.c_str()) + 4;
 	}
 	num = htonl(num);
@@ -317,24 +304,31 @@ int createConfig(const unsigned char * md5_str, const long long fileSize){
 	sprintf(cmd, "upload/%02x/%s/cfg", md5_str[0], md5S(md5_str).c_str());
 	
 	int fd = open("lockCreateFile", O_WRONLY|O_APPEND);
-	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);  
-
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) {
+		sleep(1000);  
+	}
 	if (access(cmd, 0) == -1) {
-		cout << cmd << endl;
 		ofstream file(cmd, ios::binary);
+
+		char msg[1024];
 		if (file.is_open()) {
-			cout << "file ok" << endl;
+			sprintf(msg, "create %s succeed", cmd);
+			writeLog(msg);
 		} else {
-			cout << "file error" << endl;
+			sprintf(msg, "create %s failed", cmd);
+			writeLog(msg);
+			return -1;
 		}
 		int blockNum = (fileSize - 1) / (1024*1024) + 1;
-		cout << blockNum << endl;
+		
+		sprintf(msg, "%s's block num is %d", cmd, blockNum);
+		writeLog(msg);
+
 		char flag = 0;
 		for (int i = 0; i < blockNum; ++i)
 			file.write(&flag, 1);
 		
 		DB_Operate DB;
-		cout << md5S(md5_str) << endl;
 		DB.Insert_Md5_Statu(md5S(md5_str), "2");
 		file.close();
 	}
@@ -358,23 +352,17 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 	}
 	sprintf(path, "upload/%02x/%s/%d", md5_str[0], md5_32, blockNum);
 
-	//cout << __LINE__ << endl;
 	L = recv(sockfd, &size, sizeof(size), MSG_WAITALL);
 	if (L != sizeof(size)) return -1;
-	//cout << size << endl;
 	size = ntohl(size);
-	//cout << size << endl;
 	MD5_CTX c;
 	MD5_Init(&c);
 	ofstream file(path);
 	while (size > 0) {
-		//cout << size << endl;
 		int s = min(size, 1024);
 		size -= s;
 		L = recv(sockfd, buff, s, MSG_WAITALL);
 		buff[L] = 0;
-		//puts(buff);
-		//cout << L << endl;
 		if (L != s) return -1;
 		MD5_Update(&c, buff, L);
 		file.write(buff, L);
@@ -384,7 +372,6 @@ int recvFile(int sockfd, const unsigned char * md5_str, int blockNum){
 	if (L != 16) return -1;
 	MD5_Final(md5_chk,&c);
 	for (int i = 0; i < 16; ++i) {
-		//cout << (int)md5_chk[i] << ' ' << (int)md5[i] << endl;
 		if (md5_chk[i] != md5[i]) return -1;
 	}
 	return 0;
@@ -407,7 +394,10 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 	sprintf(compPath, "/root/files/%02x/%s", md5_str[0], md5_32);
 
 	int fd = open("lockFileMerge", O_WRONLY|O_APPEND);  
-	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) {
+		sleep(1000);
+		cout << "lockFileOp" << endl;
+	}
 
 	if (access(compPath, 0) == -1) {
 		ofstream compF(compPath, ios::binary);
@@ -418,11 +408,14 @@ int mergeFile(const unsigned char * md5_str, const int fileL, const long long fi
 			compF << sourF.rdbuf();
 			sourF.close();
 		}
-		DB_Operate DB;
-		int flag = DB.Update_Md5_Statu(md5_32, "1"); 
 		sprintf(cmd, "rm -rf upload/%02x/%s", md5_str[0], md5_32);
 		system(cmd);
+
+		char msg[1024];
+		sprintf(msg, "create %s over, file size should be %d", compPath, fileSize);
 	}
+	DB_Operate DB;
+	int flag = DB.Update_Md5_Statu(md5_32, "1"); 
 	fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
 	return 0;
 }
@@ -438,8 +431,10 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	sprintf(cfg_file + l, "/cfg");
 	
 	int fd = open("lockFileOp", O_WRONLY|O_APPEND);  
-	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
-
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) {
+		sleep(1000);
+		cout << "lockFileOp" << endl;
+	}
 	if (access(cfg_file, 0) == -1) {
 		createConfig(md5_str, fileSize);
 	}
@@ -451,17 +446,13 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	int blockNum = -3;
 	int overNum = 0;
 	file.seekg(0, ios::beg);
-	cout << cfg_file << endl;
 	for (int i = 0; i < fileL; ++i) {
 		file.read(&flag, 1);
-		//cout << "i : " << i << ' ' << (int)flag << endl;
 		if (flag != -1) overmark = 0;
 		if (flag == 0 && blockNum == -3) {
-			//cout << (int)flag << endl;
 			blockNum = i;
 			file.seekg(i, ios::beg);
 			flag = 1;
-			//cout << (int)flag << endl;
 			file.write(&flag, 1);
 			break;
 		}
@@ -469,40 +460,44 @@ int selectBlock(int sockfd, const char * path, const unsigned char * md5_str, co
 	file.close();
 	fcntl(fd, F_SETLKW, file_lock(F_UNLCK, SEEK_SET));
 	
-	cout << "blockNum : " << blockNum << endl;
+	cout << "blockNum : " << blockNum << " overmark : " << (int)overmark << endl;
+	
+
 	int tblockNum = htonl(blockNum);
-	send(sockfd, &tblockNum, sizeof(tblockNum), 0);
 	if (overmark == 1 || blockNum == -3) {
 		if (overmark == 1) mergeFile(md5_str, fileL, fileSize);
+		send(sockfd, &tblockNum, sizeof(tblockNum), 0);
 		return 0;
 	}
-
-	cout << "recv" << blockNum << endl;
+	send(sockfd, &tblockNum, sizeof(tblockNum), 0);
 	if (blockNum != -1) flag = recvFile(sockfd, md5_str, blockNum);
-	cout << __FILE__ << __LINE__ << endl;
 	
-	//if (flag == -1) return -1;
-	cout << "xxx" << endl;
-
 	fd = open("lockFileOp", O_WRONLY|O_APPEND);  
-	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) sleep(1000);
-
+	while (fcntl(fd, F_SETLKW, file_lock(F_WRLCK, SEEK_SET)) != 0) {
+		sleep(1000);
+		cout << "lockFileOp" << endl;
+	}
 	fstream file_(cfg_file, ios::in|ios::out|ios::binary);
 	file_.seekg(blockNum, ios::beg);
 	if (flag == 0) {
 		++overNum;
 		char buf = -1;
 		file_.write(&buf, 1);
+		char msg[1024];
+		sprintf(msg, "receive %s-%d success", md5S(md5_str).c_str(), blockNum);
+		writeLog(msg);
 	} else {
+		char msg[1024];
 		char buf = 0;
 		file_.write(&buf, 1);
+		sprintf(msg, "receive %s-%d fail", md5S(md5_str).c_str(), blockNum);
+		writeLog(msg);
 	}
 
 	file_.seekg(0, ios::beg);
 	overNum = 0;
 	for (int i = 0; i < fileL; ++i) {
 		file_.read(&flag, 1);
-		//cout << (int)flag << endl;
 		if (flag == -1) ++overNum;
 	}
 	file_.close();
@@ -534,10 +529,8 @@ int addFile(int sockfd){
 	char UIDS[13];
 	sprintf(UIDS, "%d", UID);
 	
-	cout << __FILE__ << endl;
 	if ((L = getStr(sockfd, path)) == -1) return -1;
 
-	cout << __FILE__ << endl;
 	if (path[L-1] == '/') {
 		char flag = DB.Insert_File_Info(UIDS, path, "NULL");
 		int msg = flag ? 0 : -1;
@@ -546,21 +539,16 @@ int addFile(int sockfd){
 		return 0;
 	}
 
-	cout << __FILE__ << endl;
 	L = recv(sockfd, md5_str, 16, MSG_WAITALL);
 	if (L != 16) return -1;
 
-	cout << __FILE__ << endl;
 	L = recv(sockfd, &fileSize, 8, MSG_WAITALL);
 	if (L != 8) return -1;
 	fileSize = ntohll(fileSize);
-	cout << fileSize << endl;
 
 	char flag;
 	flag = DB.Query_Md5_Statu(md5S(md5_str));
 	
-
-	cout << flag << endl;
 
 	int msg = -1;
 	switch (flag) {
@@ -575,6 +563,9 @@ int addFile(int sockfd){
 		case 3:
 			return 0;
 		default:
+			char msg[1024];
+			sprintf(msg, "%s have undefine statu!", md5S(md5_str).c_str());
+			writeLog(msg);
 			return -1;
 	}
 
@@ -666,19 +657,19 @@ int downLoad(int sockfd){
 	DB_Operate DB;
 	string MD5 = DB.Query_Md5(UIDS, path);
 	flag = DB.Query_Md5_Statu(MD5);
-	cout << (int)flag << endl;
 	long long res;
 	if (flag != 1) {
 		int msg = -1;
 		send(sockfd, &msg, 4, 0);
+		char logMsg[1024];
+		sprintf(logMsg, "UID(%d)'s file %s is undefine!", UID, path);
+		writeLog(logMsg);
 		return -1;
 	}
 	
 	char md5_32[33], compPath[PATHSIZE];
-	cout << MD5 << endl;
 	sprintf(md5_32, "%s", MD5.c_str());
 	sprintf(compPath, "/root/files/%c%c/%s", md5_32[0], md5_32[1], md5_32);
-	cout << compPath << endl;
 	ifstream file(compPath, ios::binary);
 
 	if (!file.is_open()) {
@@ -712,8 +703,12 @@ int downLoad(int sockfd){
 		L = send(sockfd, &tsize, sizeof(tsize), 0);
 		if (L != sizeof(tsize)) return -1;
 		
+		char logMsg[1024];
 		cout << path << endl;
-		cout << offset << ' ' << size << ' ' << tsize << endl;
+		cout << offset << ' ' << size << ' ' << fileSize << endl;
+		sprintf(logMsg, "file %s have %lld Bytes, UID(%d) begin to download from %lld Bytes to %lld Bytes", path, fileSize, UID, offset, offset + size - 1);
+		writeLog(logMsg);
+
 		char buff[2048];
 		while (size > 0) {
 			int l = min(1024, size);
@@ -835,6 +830,7 @@ void createServer(int portNumber){
 }
 
 int main(){
+	system("rm -rf upload/");
 	FILE * fp;
 	fp = fopen("lockCreateFile", "w");
 	fclose(fp);
