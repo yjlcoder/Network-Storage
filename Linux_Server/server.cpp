@@ -786,7 +786,13 @@ void createServer(int portNumber){
     }
     
 	int opt = 1;
-	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&timeout, sizeof(struct timeval)) < 0) {
+	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
+        writeLog(strerror(errno)); 
+		close(listenfd);
+		exit(0);	
+	}
+	
+	if (setsockopt(listenfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
         writeLog(strerror(errno)); 
 		close(listenfd);
 		exit(0);	
