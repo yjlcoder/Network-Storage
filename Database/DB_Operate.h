@@ -14,8 +14,12 @@ class DB_Operate
 		void Debug_Out(string s);
 		//链接数据库 
 		DB_Operate();
+		//插入一条用户登录记录
+		void Insert_User_Log(string Userid, string Time, string Status);
 		//输出数据库中的User表
 		bool Show_User();
+		//输出用户登录记录表Log
+		bool Show_Log();
 		//输出数据库中的File表
 		bool Show_File();
 		//筛选出当前目录下的文件列表
