@@ -771,7 +771,7 @@ int exec(int sockfd){
 void createServer(int portNumber){
 	signal(SIGCHLD, SIG_IGN);
     struct timeval timeout;
-    timeout.tv_sec = 3;                
+    timeout.tv_sec = 10;               
     timeout.tv_usec = 0;
 	
 
@@ -786,7 +786,7 @@ void createServer(int portNumber){
     }
     
 	int opt = 1;
-	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
+	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&timeout, sizeof(struct timeval)) < 0) {
         writeLog(strerror(errno)); 
 		close(listenfd);
 		exit(0);	
