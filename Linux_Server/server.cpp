@@ -642,6 +642,15 @@ int copyFile(int sockfd){
 	return 0;
 }
 
+int str2hex(const char * md5_32, unsigned char * md5){
+	for (int i = 0; i < 32; i += 2) {
+		int high = md5_32[i] <= '9' ? md5_32[i] - '0' : md5_32[i] - 'a' + 10;
+		int low = md5_32[i+1] <= '9' ? md5_32[i+1] - '0' : md5_32[i+1] - 'a' + 10;
+		md5[i>>1] = (high << 4) + low;
+	}
+	return 0;
+}
+
 int downLoad(int sockfd){
 	int UID, Len, L;
 	char path[PATHSIZE];
@@ -659,8 +668,8 @@ int downLoad(int sockfd){
 	flag = DB.Query_Md5_Statu(MD5);
 	long long res;
 	if (flag != 1) {
-		int msg = -1;
-		send(sockfd, &msg, 4, 0);
+		long long msg = -1;
+		send(sockfd, &msg, 8, 0);
 		char logMsg[1024];
 		sprintf(logMsg, "UID(%d)'s file %s is undefine!", UID, path);
 		writeLog(logMsg);
@@ -729,6 +738,38 @@ int downLoad(int sockfd){
 	return 0;
 }
 
+int md5query(int sockfd){
+	int UID, Len, L;
+	char path[PATHSIZE];
+	L = recv(sockfd, &UID, sizeof(UID), MSG_WAITALL);
+	if (L != sizeof(UID)) return -1;
+	UID = ntohl(UID);
+
+	if (getStr(sockfd, path) == -1) return -1;
+	char flag;
+	char UIDS[20];
+	sprintf(UIDS, "%d", UID);
+	
+	DB_Operate DB;
+	string MD5 = DB.Query_Md5(UIDS, path);
+	flag = DB.Query_Md5_Statu(MD5);
+	long long res;
+	if (flag != 1) {
+		long long msg = -1;
+		send(sockfd, &msg, 8, 0);
+		char logMsg[1024];
+		sprintf(logMsg, "UID(%d)'s file %s is undefine!", UID, path);
+		writeLog(logMsg);
+		return -1;
+	}
+	
+	unsigned char md5Data[16];
+	str2hex(MD5.c_str(), md5Data);
+	L = send(sockfd, md5Data, 16, 0);
+	if (L != 16) return -1;
+	return 0;
+}
+
 int exec(int sockfd){
 	char mark;
 	int L = recv(sockfd, &mark, sizeof(mark), MSG_WAITALL);
@@ -762,6 +803,9 @@ int exec(int sockfd){
 		case 0x07:
 			return downLoad(sockfd);
 			break;
+		case 0x08:
+			return md5query(sockfd);
+			break;
 		default:
 			writeLog("undefine opt");
 	}
@@ -786,13 +830,7 @@ void createServer(int portNumber){
     }
     
 	int opt = 1;
-	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
-        writeLog(strerror(errno)); 
-		close(listenfd);
-		exit(0);	
-	}
-	
-	if (setsockopt(listenfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval)) < 0) {
+	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (char *)&timeout, sizeof(struct timeval)) < 0) {
         writeLog(strerror(errno)); 
 		close(listenfd);
 		exit(0);	
@@ -835,7 +873,7 @@ void createServer(int portNumber){
 	
 }
 
-int main(){
+int main(int argv, char * argc[]){
 	system("rm -rf upload/");
 	FILE * fp;
 	fp = fopen("lockCreateFile", "w");
@@ -849,6 +887,8 @@ int main(){
 	int semFileMerge = sem_init(FILEMERGEKEY, 1);
 	int semFileOp = sem_init(FILEOPKEY, 1);
 
-	createServer(8192);
+	int portNum = 8192;
+	if (argv == 2) portNum = atoi(argc[1]);
+	createServer(portNum);
 }
 
